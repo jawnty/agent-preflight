@@ -1,0 +1,16 @@
+{
+  "name": "agent-preflight",
+  "version": "0.2.0",
+  "description": "Local deterministic issue readiness and ticket upgrade CLI for coding agents.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "agent-preflight": "bin/agent-preflight.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
