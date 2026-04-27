@@ -1,40 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640" role="img" aria-labelledby="title desc">
-  <title id="title">Agent Preflight upgrade workflow</title>
-  <desc id="desc">A terminal-style demo showing check, upgrade dry-run, Linear comment, apply, and re-check workflow.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#09090b"/>
-      <stop offset="0.58" stop-color="#18181b"/>
-      <stop offset="1" stop-color="#27272a"/>
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000" flood-opacity="0.45"/>
-    </filter>
-  </defs>
-  <rect width="1120" height="640" fill="url(#bg)"/>
-  <circle cx="945" cy="110" r="190" fill="#3f3f46" opacity="0.25"/>
-  <circle cx="120" cy="575" r="220" fill="#52525b" opacity="0.18"/>
-  <g filter="url(#shadow)">
-    <rect x="56" y="52" width="1008" height="536" rx="22" fill="#0f0f12" stroke="#3f3f46"/>
-    <rect x="56" y="52" width="1008" height="46" rx="22" fill="#18181b"/>
-    <circle cx="88" cy="75" r="7" fill="#ef4444"/>
-    <circle cx="114" cy="75" r="7" fill="#f59e0b"/>
-    <circle cx="140" cy="75" r="7" fill="#22c55e"/>
-    <text x="560" y="81" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#a1a1aa">agent-preflight Linear workflow</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" viewBox="0 0 1120 680" role="img" aria-labelledby="title desc">
+  <title id="title">Agent Preflight terminal demo</title>
+  <desc id="desc">A terminal-style demo showing a typed Agent Preflight check, upgrade draft, and Linear comment command.</desc>
+  <rect width="1120" height="680" fill="#09090b"/>
+  <rect x="58" y="52" width="1004" height="576" rx="24" fill="#121216" stroke="#3f3f46" stroke-width="2"/>
+  <rect x="58" y="52" width="1004" height="52" rx="24" fill="#1e1e23"/>
+  <rect x="58" y="80" width="1004" height="24" fill="#1e1e23"/>
+  <circle cx="91" cy="78" r="7" fill="#f87171"/>
+  <circle cx="115" cy="78" r="7" fill="#facc15"/>
+  <circle cx="139" cy="78" r="7" fill="#86efac"/>
+  <text x="560" y="83" text-anchor="middle" font-family="Menlo, monospace" font-size="14" fill="#a1a1aa">agent-preflight demo</text>
 
-    <text x="88" y="148" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#e4e4e7">$ agent-preflight check LIN-123 --source linear</text>
-    <text x="88" y="184" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#f87171">not_ready: missing acceptance criteria, verification, likely files</text>
+  <text x="100" y="150" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
+  <text x="126" y="150" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight check LIN-123 --source linear</text>
+  <text x="100" y="190" font-family="Menlo, monospace" font-size="23" fill="#f87171">Agent Preflight: not_ready (14/100, confidence 0.60)</text>
+  <text x="100" y="226" font-family="Menlo, monospace" font-size="19" fill="#a1a1aa">Missing: acceptance criteria, verification, likely files</text>
+  <text x="100" y="262" font-family="Menlo, monospace" font-size="19" fill="#facc15">Next best fix: What observable conditions mean done?</text>
 
-    <text x="88" y="242" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#e4e4e7">$ agent-preflight upgrade LIN-123 --source linear --dry-run</text>
-    <text x="88" y="278" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#facc15">Drafts an agent-ready issue rewrite with TODOs for unknowns</text>
+  <text x="100" y="326" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
+  <text x="126" y="326" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --source linear --dry-run</text>
+  <text x="100" y="366" font-family="Menlo, monospace" font-size="23" fill="#93c5fd"># Agent Preflight Upgrade Draft</text>
+  <text x="100" y="402" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">## Acceptance Criteria</text>
+  <text x="100" y="438" font-family="Menlo, monospace" font-size="19" fill="#facc15">- TODO: Add observable, testable done conditions.</text>
+  <text x="100" y="474" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">## Likely Files / Areas</text>
+  <text x="100" y="510" font-family="Menlo, monospace" font-size="19" fill="#86efac">- src/pages/dashboard/ChartPanel.tsx</text>
 
-    <text x="88" y="336" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#e4e4e7">$ agent-preflight upgrade LIN-123 --source linear --comment</text>
-    <text x="88" y="372" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#86efac">Posts proposal back to Linear for human review</text>
-
-    <text x="88" y="430" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#e4e4e7">$ agent-preflight upgrade LIN-123 --source linear --apply</text>
-    <text x="88" y="466" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" fill="#86efac">Explicitly updates the Linear description when approved</text>
-
-    <rect x="88" y="506" width="944" height="46" rx="12" fill="#18181b" stroke="#3f3f46"/>
-    <text x="112" y="535" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" fill="#a1a1aa">Deterministic first: score the ticket, preserve uncertainty, then upgrade the handoff.</text>
-  </g>
+  <text x="100" y="574" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
+  <text x="126" y="574" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --source linear --comment</text>
+  <rect x="846" y="552" width="13" height="28" fill="#e4e4e7"/>
 </svg>
