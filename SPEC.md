@@ -115,6 +115,7 @@ Options:
 - `--agent <codex|claude|copilot|cursor|other>`: agent profile. Defaults to `other`.
 - `--min-score <number>`: fail with exit code 1 if score is below threshold.
 - `--ci`: non-interactive mode. Equivalent to `--json` plus threshold-oriented exit behavior.
+- `--progress`: print read/scan/score status lines to stderr while preserving stdout.
 - `--config <path>`: config file. Defaults to `.agent-preflight.json` if present.
 - `--no-color`: disable ANSI color.
 
@@ -636,6 +637,7 @@ Options:
 - `--repo <path>`: repo path used to detect instructions, test commands, CI config, and candidate files.
 - `--source <markdown|github|linear|auto>`: source adapter.
 - `--agent <codex|claude|copilot|cursor|other>`: agent profile.
+- `--progress`: print read/scan/score/update status lines to stderr.
 
 Safety rules:
 

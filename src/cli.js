@@ -18,9 +18,9 @@ const { renderUpgrade, renderUpgradeMarkdown } = require('./upgrade');
 
 function usage() {
   return `Usage:
-  agent-preflight check <source> [--json] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--min-score <number>] [--ci]
+  agent-preflight check <source> [--json] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--min-score <number>] [--ci] [--progress]
   agent-preflight packet <source> [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>]
-  agent-preflight upgrade <source> [--dry-run] [--comment] [--apply] [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>]
+  agent-preflight upgrade <source> [--dry-run] [--comment] [--apply] [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--progress]
   agent-preflight init [--config <path>] [--force]
   agent-preflight fixtures [--out <path>]`;
 }
@@ -36,7 +36,7 @@ function parseArgs(argv) {
       continue;
     }
     const key = arg.slice(2);
-    if (['json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply'].includes(key)) {
+    if (['json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply', 'progress', 'verbose'].includes(key)) {
       flags[key] = true;
       continue;
     }
@@ -50,6 +50,14 @@ function parseArgs(argv) {
     index += 1;
   }
   return { command, source: positionals[0], flags };
+}
+
+function shouldShowProgress(flags) {
+  return Boolean((flags.progress || flags.verbose) && !flags.json && !flags.ci);
+}
+
+function progress(flags, message) {
+  if (shouldShowProgress(flags)) process.stderr.write(`› ${message}\n`);
 }
 
 function agentProfile(kind, config) {
@@ -66,9 +74,11 @@ function resolveSourceType(source, explicit) {
 
 async function normalizeSource(source, flags, config) {
   const repoPath = flags.repo || config.repoPath || '.';
-  const repo = detectRepo(repoPath);
-  const agent = agentProfile(flags.agent || config.agent || 'other', config);
   const sourceType = resolveSourceType(source, flags.source || 'auto');
+  progress(flags, `reading ${sourceType} source`);
+  const repo = detectRepo(repoPath);
+  progress(flags, `scanning repo signals at ${path.resolve(repoPath)}`);
+  const agent = agentProfile(flags.agent || config.agent || 'other', config);
   const context = { repo, agent };
 
   if (sourceType === 'markdown') return parseMarkdownFile(source, context);
@@ -88,6 +98,7 @@ async function commandCheck(source, flags) {
   }
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
+  progress(flags, 'scoring readiness');
   const analysis = analyze(normalized, config);
   const minScore = flags['min-score'] === undefined ? (flags.ci ? config.minScore : null) : Number(flags['min-score']);
 
@@ -110,6 +121,7 @@ async function commandPacket(source, flags) {
   }
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
+  progress(flags, 'scoring readiness');
   const analysis = analyze(normalized, config);
   const markdown = renderPacket(normalized, analysis);
   if (flags.out) {
@@ -129,7 +141,9 @@ async function commandUpgrade(source, flags) {
   }
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
+  progress(flags, 'scoring readiness');
   const analysis = analyze(normalized, config);
+  progress(flags, 'building upgrade draft');
   const upgrade = renderUpgrade(normalized, analysis);
   const markdown = renderUpgradeMarkdown(normalized, analysis);
 
@@ -148,11 +162,13 @@ async function commandUpgrade(source, flags) {
   }
 
   if (flags.comment) {
+    progress(flags, 'posting proposal to Linear');
     const result = await commentLinearIssue(normalized, upgrade.commentBody);
     process.stdout.write(`Posted Linear comment${result && result.comment && result.comment.url ? `: ${result.comment.url}` : '.'}\n`);
   }
 
   if (flags.apply) {
+    progress(flags, 'updating Linear issue description');
     const result = await updateLinearIssueDescription(normalized, upgrade.proposedDescription);
     process.stdout.write(`Updated Linear issue${result && result.issue && result.issue.url ? `: ${result.issue.url}` : '.'}\n`);
   }

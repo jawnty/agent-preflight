@@ -39,6 +39,16 @@ test('upgrade command prints a safe dry-run ticket rewrite by default', () => {
   assert.match(result.stdout, /## Open Human Questions/);
 });
 
+test('progress mode emits status lines to stderr without corrupting stdout', () => {
+  const result = cli(['upgrade', fixture('vague.md'), '--progress']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /reading markdown source/);
+  assert.match(result.stderr, /scanning repo signals/);
+  assert.match(result.stderr, /scoring readiness/);
+  assert.match(result.stderr, /building upgrade draft/);
+  assert.match(result.stdout, /^# Agent Preflight Upgrade Draft/);
+});
+
 test('upgrade --out writes a draft file', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-preflight-upgrade-'));
   const out = path.join(tmp, 'upgrade.md');

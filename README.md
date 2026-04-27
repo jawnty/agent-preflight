@@ -16,7 +16,7 @@ You can run the CLI directly:
 ```bash
 node bin/agent-preflight.js check fixtures/vague.md
 node bin/agent-preflight.js check fixtures/ready-bug.md
-node bin/agent-preflight.js upgrade fixtures/vague.md
+node bin/agent-preflight.js upgrade fixtures/vague.md --progress
 node bin/agent-preflight.js packet fixtures/ready-bug.md --out packet.md
 ```
 
@@ -62,6 +62,7 @@ node bin/agent-preflight.js packet fixtures/ready-bug.md --out packet.md
 ```bash
 node bin/agent-preflight.js upgrade fixtures/vague.md
 node bin/agent-preflight.js upgrade fixtures/vague.md --out upgrade.md
+node bin/agent-preflight.js upgrade fixtures/vague.md --progress
 ```
 
 For Linear, `upgrade` can safely post the proposal as a comment, or explicitly replace the issue description:
@@ -97,6 +98,7 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 - `--agent <codex|claude|copilot|cursor|other>`: agent profile. Defaults to config or `other`.
 - `--min-score <number>`: exit with code 1 if the score is below the threshold.
 - `--ci`: equivalent to JSON output plus threshold-oriented exit behavior.
+- `--progress`: print read/scan/score status lines to stderr while keeping stdout machine-readable.
 - `--config <path>`: config file. Defaults to `.agent-preflight.json` if present.
 
 `packet` supports `--out`, `--repo`, `--source`, and `--agent`.
@@ -107,6 +109,7 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 - `--out <path>`: write the upgrade draft to a file.
 - `--comment`: post the upgrade proposal as a Linear comment. Requires `--source linear` and `LINEAR_API_KEY`.
 - `--apply`: replace the Linear issue description with the proposed upgrade. Requires `--source linear` and `LINEAR_API_KEY`.
+- `--progress`: print read/scan/score/update status lines to stderr.
 - `--repo`, `--source`, and `--agent`: same meaning as `check`.
 
 ## Scoring Model
@@ -208,8 +211,8 @@ From the repo you want the agent to work in:
 ```bash
 cd /path/to/your/project
 LINEAR_API_KEY=... agent-preflight check ENG-123 --source linear
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --dry-run
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --comment
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --dry-run --progress
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --comment --progress
 ```
 
 This lets Linear provide the task while the local repo provides grounded context such as package scripts, instruction files, CI config, and inferred candidate files. If the ticket is still missing product intent, Agent Preflight leaves TODOs and human questions instead of inventing answers.
