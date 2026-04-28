@@ -49,6 +49,12 @@ test('progress mode emits status lines to stderr without corrupting stdout', () 
   assert.match(result.stdout, /^# Agent Preflight Upgrade Draft/);
 });
 
+test('Linear ticket ids auto-detect without --source linear', () => {
+  const result = cli(['check', 'ENG-123']);
+  assert.equal(result.status, 3);
+  assert.match(result.stderr, /LINEAR_API_KEY is required/);
+});
+
 test('upgrade --out writes a draft file', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-preflight-upgrade-'));
   const out = path.join(tmp, 'upgrade.md');

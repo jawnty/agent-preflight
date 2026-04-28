@@ -68,8 +68,8 @@ node bin/agent-preflight.js upgrade fixtures/vague.md --progress
 For Linear, `upgrade` can safely post the proposal as a comment, or explicitly replace the issue description:
 
 ```bash
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --comment
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --apply
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --comment
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --apply
 ```
 
 Use `--comment` first when testing real workflows. `--apply` intentionally requires an explicit flag because it mutates the Linear issue description.
@@ -107,8 +107,8 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 
 - `--dry-run`: print the proposed ticket rewrite. This is also the default when no mutation flags are supplied.
 - `--out <path>`: write the upgrade draft to a file.
-- `--comment`: post the upgrade proposal as a Linear comment. Requires `--source linear` and `LINEAR_API_KEY`.
-- `--apply`: replace the Linear issue description with the proposed upgrade. Requires `--source linear` and `LINEAR_API_KEY`.
+- `--comment`: post the upgrade proposal as a Linear comment. Requires a Linear ticket or Linear URL and `LINEAR_API_KEY`.
+- `--apply`: replace the Linear issue description with the proposed upgrade. Requires a Linear ticket or Linear URL and `LINEAR_API_KEY`.
 - `--progress`: print read/scan/score/update status lines to stderr.
 - `--repo`, `--source`, and `--agent`: same meaning as `check`.
 
@@ -161,11 +161,11 @@ GitHub issue URLs are fetched with the public GitHub API. `GITHUB_TOKEN` is used
 node bin/agent-preflight.js check https://github.com/owner/repo/issues/42
 ```
 
-Linear requires `--source linear` for identifiers and `LINEAR_API_KEY` for API access.
+Linear ticket IDs and Linear issue URLs are auto-detected. Linear API access requires `LINEAR_API_KEY`.
 
 ```bash
-LINEAR_API_KEY=... node bin/agent-preflight.js check LIN-123 --source linear
-LINEAR_API_KEY=... agent-preflight upgrade LIN-123 --source linear --comment
+LINEAR_API_KEY=... node bin/agent-preflight.js check LIN-123
+LINEAR_API_KEY=... agent-preflight upgrade LIN-123 --comment
 ```
 
 Network or auth failures return exit code 3.
@@ -210,9 +210,9 @@ From the repo you want the agent to work in:
 
 ```bash
 cd /path/to/your/project
-LINEAR_API_KEY=... agent-preflight check ENG-123 --source linear
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --dry-run --progress
-LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --source linear --comment --progress
+LINEAR_API_KEY=... agent-preflight check ENG-123
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --dry-run --progress
+LINEAR_API_KEY=... agent-preflight upgrade ENG-123 --comment --progress
 ```
 
 This lets Linear provide the task while the local repo provides grounded context such as package scripts, instruction files, CI config, and inferred candidate files. If the ticket is still missing product intent, Agent Preflight leaves TODOs and human questions instead of inventing answers.

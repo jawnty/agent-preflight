@@ -11,13 +11,13 @@
   <text x="560" y="83" text-anchor="middle" font-family="Menlo, monospace" font-size="14" fill="#a1a1aa">agent-preflight demo</text>
 
   <text x="100" y="150" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
-  <text x="126" y="150" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight check LIN-123 --source linear</text>
+  <text x="126" y="150" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight check LIN-123</text>
   <text x="100" y="190" font-family="Menlo, monospace" font-size="23" fill="#f87171">Agent Preflight: not_ready (14/100, confidence 0.60)</text>
   <text x="100" y="226" font-family="Menlo, monospace" font-size="19" fill="#a1a1aa">Missing: acceptance criteria, verification, likely files</text>
   <text x="100" y="262" font-family="Menlo, monospace" font-size="19" fill="#facc15">Next best fix: What observable conditions mean done?</text>
 
   <text x="100" y="326" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
-  <text x="126" y="326" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --source linear --dry-run</text>
+  <text x="126" y="326" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --dry-run</text>
   <text x="100" y="366" font-family="Menlo, monospace" font-size="23" fill="#93c5fd"># Agent Preflight Upgrade Draft</text>
   <text x="100" y="402" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">## Acceptance Criteria</text>
   <text x="100" y="438" font-family="Menlo, monospace" font-size="19" fill="#facc15">- TODO: Add observable, testable done conditions.</text>
@@ -25,6 +25,6 @@
   <text x="100" y="510" font-family="Menlo, monospace" font-size="19" fill="#86efac">- src/pages/dashboard/ChartPanel.tsx</text>
 
   <text x="100" y="574" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
-  <text x="126" y="574" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --source linear --comment</text>
+  <text x="126" y="574" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight upgrade LIN-123 --comment</text>
   <rect x="846" y="552" width="13" height="28" fill="#e4e4e7"/>
 </svg>

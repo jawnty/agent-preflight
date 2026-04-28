@@ -68,14 +68,14 @@ function agentProfile(kind, config) {
 function resolveSourceType(source, explicit) {
   if (explicit && explicit !== 'auto') return explicit;
   if (parseGitHubIssueUrl(source)) return 'github';
-  if (parseLinearSource(source) && /^https:\/\/linear\.app\//i.test(source)) return 'linear';
+  if (parseLinearSource(source)) return 'linear';
   return 'markdown';
 }
 
 async function normalizeSource(source, flags, config) {
   const repoPath = flags.repo || config.repoPath || '.';
   const sourceType = resolveSourceType(source, flags.source || 'auto');
-  progress(flags, `reading ${sourceType} source`);
+  progress(flags, `reading ${sourceType === 'linear' ? 'Linear ticket' : `${sourceType} source`}`);
   const repo = detectRepo(repoPath);
   progress(flags, `scanning repo signals at ${path.resolve(repoPath)}`);
   const agent = agentProfile(flags.agent || config.agent || 'other', config);

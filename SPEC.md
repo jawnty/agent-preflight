@@ -104,7 +104,7 @@ Scores an issue and prints a report.
 agent-preflight check fixtures/ready-bug.md
 agent-preflight check fixtures/vague.md --json
 agent-preflight check https://github.com/owner/repo/issues/42
-agent-preflight check LIN-123 --source linear
+agent-preflight check LIN-123
 ```
 
 Options:
@@ -252,7 +252,7 @@ GitHub adapter rules:
 
 Linear adapter rules:
 
-- Accept Linear URLs and issue identifiers when `--source linear` is supplied.
+- Accept Linear URLs and issue identifiers automatically.
 - Require `LINEAR_API_KEY`.
 - Fetch issue title, description, state, labels, priority, assignee, estimate, comments, relations, and attachments where available.
 - V1 can implement this as a best-effort adapter with tests around URL/id parsing and missing-token behavior.
@@ -623,9 +623,9 @@ Follow repository instructions. Keep the change scoped to the listed files when 
 Creates a normalized ticket rewrite from the preflight result. By default it is a dry run and prints Markdown to stdout.
 
 ```bash
-agent-preflight upgrade ENG-123 --source linear --dry-run
-agent-preflight upgrade ENG-123 --source linear --comment
-agent-preflight upgrade ENG-123 --source linear --apply
+agent-preflight upgrade ENG-123 --dry-run
+agent-preflight upgrade ENG-123 --comment
+agent-preflight upgrade ENG-123 --apply
 ```
 
 Options:
