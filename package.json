@@ -1,12 +1,45 @@
 {
   "name": "agent-preflight",
-  "version": "0.2.0",
-  "description": "Local deterministic issue readiness and ticket upgrade CLI for coding agents.",
+  "version": "0.3.0",
+  "description": "Local-first deterministic CLI that scores whether an issue is ready for an autonomous coding agent (Linear, GitHub, or Markdown). No LLM calls, no hosted backend.",
+  "keywords": [
+    "agent",
+    "agents",
+    "preflight",
+    "readiness",
+    "issue",
+    "ticket",
+    "linear",
+    "github",
+    "claude-code",
+    "codex",
+    "cursor",
+    "copilot",
+    "autonomous",
+    "cli",
+    "scoring"
+  ],
   "license": "MIT",
+  "author": "John Thomas <john.thomas@gmail.com> (https://github.com/jawnty)",
+  "homepage": "https://github.com/jawnty/agent-preflight#readme",
+  "bugs": {
+    "url": "https://github.com/jawnty/agent-preflight/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jawnty/agent-preflight.git"
+  },
   "type": "commonjs",
   "bin": {
     "agent-preflight": "bin/agent-preflight.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "fixtures",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test"
   },

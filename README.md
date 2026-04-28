@@ -7,24 +7,37 @@ No hosted backend is required. No LLM calls are made.
 ## Install
 
 ```bash
+# Global install (binary on your PATH)
+npm install -g agent-preflight
+
+# Or run on demand without installing
+npx agent-preflight check ENG-123
+```
+
+Then:
+
+```bash
+agent-preflight check fixtures/ready-bug.md
+agent-preflight upgrade fixtures/vague.md --progress
+agent-preflight packet fixtures/ready-bug.md --out packet.md
+LINEAR_API_KEY=… agent-preflight check ENG-123
+```
+
+To try it without installing globally, copy a sample fixture out:
+
+```bash
+npx agent-preflight fixtures --out ./preflight-fixtures
+npx agent-preflight check ./preflight-fixtures/ready-bug.md
+```
+
+## Develop
+
+```bash
+git clone https://github.com/jawnty/agent-preflight.git
+cd agent-preflight
 npm install
 npm test
-```
-
-You can run the CLI directly:
-
-```bash
 node bin/agent-preflight.js check fixtures/vague.md
-node bin/agent-preflight.js check fixtures/ready-bug.md
-node bin/agent-preflight.js upgrade fixtures/vague.md --progress
-node bin/agent-preflight.js packet fixtures/ready-bug.md --out packet.md
-```
-
-If installed as a package or linked locally, the binary name is `agent-preflight`:
-
-```bash
-npm link
-agent-preflight check fixtures/ready-bug.md
 ```
 
 ## Commands
