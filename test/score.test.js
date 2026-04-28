@@ -22,6 +22,13 @@ test('good feature fixture scores at least 75', () => {
   assert.notEqual(analysis.readiness, 'not_ready');
 });
 
+test('Linear prompt fixture recognizes rich-text sections', () => {
+  const analysis = analyzeFixture('linear-prompt.md');
+  assert.ok(analysis.score >= 55, `expected score >= 55, got ${analysis.score}`);
+  assert.ok(!analysis.missingFields.includes('acceptance_criteria'));
+  assert.ok(!analysis.missingFields.includes('verification_path'));
+});
+
 test('risky migration fixture applies risk caution or cap', () => {
   const analysis = analyzeFixture('risky-migration.md');
   const risk = analysis.dimensions.find((item) => item.id === 'risk_profile');

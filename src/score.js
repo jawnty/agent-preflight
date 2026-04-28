@@ -113,6 +113,8 @@ function hardGates(issue, config) {
   const text = combinedText(issue);
   const value = lower(text);
   const status = lower(issue.status);
+  const sensitiveTerm = String.raw`(?:secret|credential|token|api key|private key|ssh key|production database|admin access)`;
+  const requestVerb = String.raw`(?:ask|need|requires?|provide|paste|share|give|grant)`;
 
   if (['done', 'closed', 'cancelled', 'canceled'].includes(status)) {
     gates.push({ id: 'closed_issue', reason: `Issue status is ${issue.status}.` });
@@ -123,7 +125,10 @@ function hardGates(issue, config) {
   if (issue.delegatedAgent) {
     gates.push({ id: 'already_delegated', reason: `Issue is already delegated to ${issue.delegatedAgent}.` });
   }
-  if (/\b(secret|credential|token|api key|private key|ssh key|production database|admin access)\b/i.test(text) && /\b(ask|need|requires?|provide|paste|share|give|grant)\b/i.test(text)) {
+  if (
+    new RegExp(`\\b${requestVerb}\\b[\\s\\S]{0,80}\\b${sensitiveTerm}\\b`, 'i').test(text) ||
+    new RegExp(`\\b${sensitiveTerm}\\b[\\s\\S]{0,80}\\b${requestVerb}\\b`, 'i').test(text)
+  ) {
     gates.push({ id: 'secrets_or_admin_access', reason: 'Issue appears to request secrets, credentials, tokens, or privileged access.' });
   }
   if (
@@ -231,7 +236,7 @@ function scoreScope(issue) {
   }
 
   const broadLine = normalize(text).split('\n').find((line) => {
-    return /\b(rewrite|redesign|overhaul|refactor everything|multiple repos|platform-wide)\b/i.test(line) && !/\b(do not|must not|out of scope|non-goal)\b/i.test(line);
+    return /\b(rewrite (?:the|all|entire|everything)|redesign|overhaul|refactor everything|multiple repos|platform-wide)\b/i.test(line) && !/\b(do not|must not|out of scope|non-goal)\b/i.test(line);
   });
   if (broadLine) {
     score -= 8;

@@ -153,6 +153,11 @@ delegatedAgent:
 ---
 ```
 
+It also understands Linear's "Copy as prompt" export format, including `<issue>`,
+`<title>`, `<description>`, team name, and copied comment threads. That makes it
+usable when you export a ticket from Linear in the browser and save it as a local
+`.md` file.
+
 ## Optional Remote Sources
 
 GitHub issue URLs are fetched with the public GitHub API. `GITHUB_TOKEN` is used when present.

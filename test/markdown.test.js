@@ -13,3 +13,16 @@ test('markdown parser extracts title, frontmatter, labels, and body', () => {
   assert.match(normalized.issue.description, /Customers using Safari 17/);
   assert.doesNotMatch(normalized.issue.description, /^# Fix invoice/m);
 });
+
+test('markdown parser extracts Linear copy-as-prompt exports', () => {
+  const normalized = parseMarkdownFile(fixture('linear-prompt.md'), { repo: {}, agent: {} });
+  assert.equal(normalized.issue.id, 'ENG-42');
+  assert.equal(normalized.issue.title, 'Ship connector health dashboard');
+  assert.deepEqual(normalized.issue.labels, ['Engineering']);
+  assert.match(normalized.issue.description, /Support cannot see/);
+  assert.match(normalized.issue.description, /npm test -- connector-health/);
+  assert.doesNotMatch(normalized.issue.description, /Work on Linear issue/);
+  assert.equal(normalized.issue.comments.length, 1);
+  assert.equal(normalized.issue.comments[0].author, 'A Teammate');
+  assert.match(normalized.issue.comments[0].body, /admin shell/);
+});

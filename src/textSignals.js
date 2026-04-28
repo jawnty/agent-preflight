@@ -22,14 +22,55 @@ function firstHeading(markdown) {
   return match ? match[1].trim() : null;
 }
 
+const SECTION_NAMES = new Set([
+  'acceptance criteria',
+  'actual behavior',
+  'constraints',
+  'context',
+  'current behavior',
+  'definition of done',
+  'desired behavior',
+  'done when',
+  'expected behavior',
+  'expected',
+  'given/when/then',
+  'in scope',
+  'non-goals',
+  'non-goals / out of scope',
+  'notes',
+  'out of scope',
+  'problem',
+  'qa',
+  'root cause',
+  'scope',
+  'steps to reproduce',
+  'test plan',
+  'testing',
+  'verification'
+]);
+
+function sectionHeading(line) {
+  const trimmed = normalize(line).trim().replace(/\u200b/g, '');
+  const markdown = trimmed.match(/^#{1,4}\s*(.+?)\s*$/);
+  if (markdown) return markdown[1].trim();
+
+  const bold = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
+  if (bold) return bold[1].trim();
+
+  const plain = trimmed.match(/^([A-Z][A-Za-z /-]{2,40})\s*:?\s*$/);
+  if (plain && SECTION_NAMES.has(plain[1].trim().toLowerCase())) return plain[1].trim();
+
+  return null;
+}
+
 function section(markdown, names) {
   const wanted = new Set(names.map((name) => name.toLowerCase()));
   const sourceLines = normalize(markdown).split('\n');
   let start = -1;
 
   for (let index = 0; index < sourceLines.length; index += 1) {
-    const match = sourceLines[index].match(/^(#{2,4})\s*(.+?)\s*$/);
-    if (match && wanted.has(match[2].toLowerCase())) {
+    const heading = sectionHeading(sourceLines[index]);
+    if (heading && wanted.has(heading.toLowerCase())) {
       start = index + 1;
       break;
     }
@@ -38,7 +79,7 @@ function section(markdown, names) {
   if (start === -1) return '';
   const collected = [];
   for (let index = start; index < sourceLines.length; index += 1) {
-    if (/^#{1,4}\s+/.test(sourceLines[index])) break;
+    if (sectionHeading(sourceLines[index])) break;
     collected.push(sourceLines[index]);
   }
   return collected.join('\n').trim();
@@ -92,16 +133,19 @@ function hasContextSummary(text) {
 
 function filePaths(text) {
   const source = normalize(text);
-  const matches = source.match(/(?:^|[\s`(])(?:\.{0,2}\/)?[\w.-]+(?:\/[\w.-]+)+(?:\.\w+)?(?=$|[\s`),.:])/gm) || [];
+  const matches = [
+    ...(source.match(/(?:^|[\s`(])(?:\.{0,2}\/)?[\w.-]+(?:\/[\w.-]+)+(?:\.\w+)?(?=$|[\s`),.:])/gm) || []),
+    ...(source.match(/(?:^|[\s`(])[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs|py|rb|go|rs|java|css|scss|html|json|md|yaml|yml)(?::\d+)?(?=$|[\s`),.:])/gim) || [])
+  ];
   return [...new Set(matches
     .map((match) => match.trim().replace(/^[`(]/, '').replace(/[`),.:]$/, ''))
-    .filter((match) => !/^[a-z]+\/[a-z0-9.+-]+$/i.test(match))
+    .filter((match) => !/^[a-z]+\/[a-z0-9.+-]+$/i.test(match) || /\.[A-Za-z0-9]+(?::\d+)?$/.test(match))
     .filter((match) => !match.startsWith('/') || /\.[A-Za-z0-9]+$/.test(match)))];
 }
 
 function commands(text) {
   const found = [];
-  const regex = /\b(?:npm|pnpm|yarn|bun|node|npx|make|pytest|go test|cargo test|mvn|gradle)\b[^\n`]*/gi;
+  const regex = /\b(?:npm|pnpm|yarn|bun|node|npx|make|pytest|go test|cargo test|mvn|gradle|firebase)\b[^\n`]*/gi;
   let match;
   while ((match = regex.exec(normalize(text)))) {
     found.push(match[0].trim().replace(/[.)]+$/, ''));
@@ -129,7 +173,7 @@ function likelySymbols(text) {
 
 function titleHasActionObject(title) {
   const value = lower(title);
-  const action = /\b(fix|add|update|remove|create|implement|prevent|handle|show|hide|validate|document|test|repair|restore|improve)\b/.test(value);
+  const action = /\b(fix|add|update|remove|create|implement|prevent|handle|show|hide|validate|document|test|repair|restore|improve|ship|finalize|automate|make|build)\b/.test(value);
   const words = value.split(/\s+/).filter(Boolean);
   const vagueOnly = /^(fix|improve|update|clean up|make better|investigate|figure out)$/i.test(title.trim());
   return action && words.length >= 4 && !vagueOnly;
@@ -145,6 +189,7 @@ module.exports = {
   hasAny,
   firstHeading,
   section,
+  sectionHeading,
   lines,
   checklistItems,
   extractLinks,
