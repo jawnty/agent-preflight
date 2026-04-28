@@ -82,21 +82,21 @@ function candidateFiles(normalized, options = {}) {
   for (const absolute of walkFiles(repoPath, options)) {
     const relative = path.relative(repoPath, absolute);
     const haystack = relative.toLowerCase();
-    let score = 0;
+    let pathScore = 0;
     for (const token of tokens) {
-      if (haystack.includes(token)) score += 5;
+      if (haystack.includes(token)) pathScore += 5;
     }
-    if (score < 5) {
-      try {
-        const body = fs.readFileSync(absolute, 'utf8').slice(0, 60000).toLowerCase();
-        for (const token of tokens) {
-          if (body.includes(token)) score += 1;
-        }
-      } catch (_) {
-        // Keep repo inspection best-effort and read-only.
+    if (pathScore === 0) continue;
+    let bodyScore = 0;
+    try {
+      const body = fs.readFileSync(absolute, 'utf8').slice(0, 60000).toLowerCase();
+      for (const token of tokens) {
+        if (body.includes(token)) bodyScore += 1;
       }
+    } catch (_) {
+      // Keep repo inspection best-effort and read-only.
     }
-    if (score >= 3) scored.push({ file: relative, score });
+    scored.push({ file: relative, score: pathScore + bodyScore });
   }
 
   const inferred = scored
@@ -160,9 +160,14 @@ function buildProposedDescription(normalized, analysis) {
     sectionOrPlaceholder('Scope / Constraints', packet.constraints, 'List what is in scope and what the agent must not touch.'),
     sectionOrPlaceholder('Likely Files / Areas', likelyFiles, 'Name the file, route, component, service, or API most likely involved.'),
     sectionOrPlaceholder('Verification', verification, 'Add the exact test command or manual QA flow.'),
-    sectionOrPlaceholder('Repo Context Detected by Agent Preflight', contextNotes, 'No repo context detected. Run from the target repo or pass --repo.'),
-    sectionOrNone('Open Human Questions', questions)
+    sectionOrPlaceholder('Repo Context Detected by Agent Preflight', contextNotes, 'No repo context detected. Run from the target repo or pass --repo.')
   ];
+
+  if (analysis.notes && analysis.notes.length) {
+    parts.push(`## Preflight Notes\n\n${analysis.notes.map((note) => `- ${note}`).join('\n')}`);
+  }
+
+  parts.push(sectionOrNone('Open Human Questions', questions));
 
   return `${parts.join('\n\n')}\n`;
 }

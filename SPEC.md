@@ -116,6 +116,7 @@ Options:
 - `--min-score <number>`: fail with exit code 1 if score is below threshold.
 - `--ci`: non-interactive mode. Equivalent to `--json` plus threshold-oriented exit behavior.
 - `--progress`: print read/scan/score status lines to stderr while preserving stdout.
+- `--ignore-state`: suppress the closed/completed/cancelled hard gate so a terminal-state ticket can still be scored (e.g. for post-mortems or before reopening). Other gates are unaffected. The report surfaces a `Notes` line documenting the suppression.
 - `--config <path>`: config file. Defaults to `.agent-preflight.json` if present.
 - `--no-color`: disable ANSI color.
 
@@ -142,6 +143,7 @@ Options:
 - `--repo <path>`: repository path used for environment checks.
 - `--source <markdown|github|linear|auto>`: source adapter.
 - `--agent <codex|claude|copilot|cursor|other>`: agent profile.
+- `--ignore-state`: same meaning as on `check`.
 
 ### `init`
 
@@ -279,7 +281,7 @@ Hard gates run before scoring. A hard gate can make the result `blocked` or cap 
 
 Return readiness `blocked` and recommended action `keep_human_owned` when:
 
-- Issue status is `done`, `closed`, `cancelled`, or `canceled`.
+- Issue status is `done`, `closed`, `cancelled`, `canceled`, or `completed`. The CLI flag `--ignore-state` overrides this single gate so a terminal-state ticket can still be scored; the suppression is recorded in `analysis.notes`.
 - Issue is explicitly blocked by another task.
 - Issue is already delegated to another active agent.
 - Issue asks for secrets, credentials, tokens, key material, production database access, or admin access.
@@ -532,6 +534,7 @@ Confidence should not change readiness directly, but low confidence should add a
   ],
   "missingFields": [],
   "clarifyingQuestions": [],
+  "notes": [],
   "riskNotes": [],
   "packet": {
     "summary": "",
@@ -572,6 +575,21 @@ Missing
 
 Next best fix
   Add one explicit regression test command if available.
+```
+
+A `Notes` section appears above `Pass` whenever the analysis populates `analysis.notes`. Today this surfaces only when `--ignore-state` suppressed the closed/completed/cancelled gate; future invocation-meta signals can land in the same channel without polluting the content-derived `Cautions` and `riskNotes` sections.
+
+```text
+Agent Preflight: not_ready (28/100, confidence 0.85)
+Recommended action: request_clarification
+
+Notes
+  Issue status is completed — closed/cancelled gate suppressed via --ignore-state.
+
+Pass
+  Task clarity                 16/20
+
+…
 ```
 
 ## Agent Handoff Packet
@@ -638,6 +656,7 @@ Options:
 - `--source <markdown|github|linear|auto>`: source adapter.
 - `--agent <codex|claude|copilot|cursor|other>`: agent profile.
 - `--progress`: print read/scan/score/update status lines to stderr.
+- `--ignore-state`: same meaning as on `check`. Lets `upgrade` draft a normalized rewrite for a closed/completed/cancelled ticket without the gate firing.
 
 Safety rules:
 
@@ -732,6 +751,8 @@ Required tests:
 - `packet` command prints Markdown with summary, criteria, verification, and questions.
 - `--min-score` exits with code 1 when threshold is not met.
 - `init` writes config without overwriting unless `--force` is supplied.
+- A closed/completed/cancelled issue returns `blocked` by default.
+- `--ignore-state` removes only the closed-issue gate (other gates such as prompt-injection still block) and surfaces a meta-note in `analysis.notes`.
 
 ## Demo Requirements
 

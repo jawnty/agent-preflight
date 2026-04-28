@@ -50,6 +50,12 @@ node bin/agent-preflight.js check fixtures/ready-bug.md --json
 node bin/agent-preflight.js check fixtures/vague.md --min-score 80
 ```
 
+Use `--ignore-state` to preflight a closed, completed, or cancelled ticket — useful for post-morteming an old issue or scoring a cancelled one before reopening it. The closed-issue hard gate is suppressed and a note is surfaced in the report:
+
+```bash
+LINEAR_API_KEY=... agent-preflight check ENG-123 --ignore-state
+```
+
 `packet` generates an agent handoff packet:
 
 ```bash
@@ -99,9 +105,10 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 - `--min-score <number>`: exit with code 1 if the score is below the threshold.
 - `--ci`: equivalent to JSON output plus threshold-oriented exit behavior.
 - `--progress`: print read/scan/score status lines to stderr while keeping stdout machine-readable.
+- `--ignore-state`: suppress the closed/completed/cancelled hard gate and score the ticket anyway. The report surfaces a `Notes` line indicating the gate was suppressed.
 - `--config <path>`: config file. Defaults to `.agent-preflight.json` if present.
 
-`packet` supports `--out`, `--repo`, `--source`, and `--agent`.
+`packet` supports `--out`, `--repo`, `--source`, `--agent`, and `--ignore-state`.
 
 `upgrade` supports:
 
@@ -110,6 +117,7 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 - `--comment`: post the upgrade proposal as a Linear comment. Requires a Linear ticket or Linear URL and `LINEAR_API_KEY`.
 - `--apply`: replace the Linear issue description with the proposed upgrade. Requires a Linear ticket or Linear URL and `LINEAR_API_KEY`.
 - `--progress`: print read/scan/score/update status lines to stderr.
+- `--ignore-state`: suppress the closed/completed/cancelled hard gate (same meaning as on `check`).
 - `--repo`, `--source`, and `--agent`: same meaning as `check`.
 
 ## Scoring Model
@@ -132,7 +140,7 @@ Readiness bands:
 - `not_ready`: score below 45.
 - `blocked`: a hard gate triggered.
 
-Hard gates block closed/cancelled issues, explicit blockers, issues already delegated to another agent, requests for secrets or privileged access, prompt-injection/exfiltration text, and inaccessible private external context without an in-issue summary.
+Hard gates block closed, completed, or cancelled issues, explicit blockers, issues already delegated to another agent, requests for secrets or privileged access, prompt-injection/exfiltration text, and inaccessible private external context without an in-issue summary. Pass `--ignore-state` on `check`/`packet`/`upgrade` to preflight a closed/completed/cancelled ticket anyway (e.g. for post-mortems); other gates are unaffected.
 
 Score caps reduce false confidence for very short issues, missing acceptance plus verification, unsummarized external links, risky areas without mitigation, and repos lacking both instructions and test commands.
 
@@ -185,12 +193,16 @@ This repo includes `docs/demo.gif` and `docs/demo.svg`, which show the intended 
 4. See `ready`.
 5. Generate an upgrade draft and packet.
 
-If you edit the SVG and want to regenerate the GIF later:
+`docs/demo.svg` is a static poster frame. `docs/demo.gif` is an animated terminal recording (about 32 s, 296 frames). To re-record the GIF, drive the CLI through a terminal-capture tool such as [`vhs`](https://github.com/charmbracelet/vhs) or [`asciinema`](https://asciinema.org/) + [`agg`](https://github.com/asciinema/agg):
 
 ```bash
-# Example if ImageMagick/rsvg-convert tooling is available:
-rsvg-convert docs/demo.svg -o docs/demo.png
-convert docs/demo.png docs/demo.gif
+# vhs (preferred — script-driven, deterministic)
+brew install vhs
+vhs docs/demo.tape   # if a tape file exists; otherwise author one against the commands above
+
+# asciinema + agg
+asciinema rec demo.cast
+agg demo.cast docs/demo.gif
 ```
 
 ## Validation
@@ -205,6 +217,7 @@ node bin/agent-preflight.js upgrade fixtures/vague.md
 node bin/agent-preflight.js packet fixtures/ready-bug.md
 node bin/agent-preflight.js check fixtures/vague.md --min-score 80
 node bin/agent-preflight.js init
+LINEAR_API_KEY=... node bin/agent-preflight.js check ENG-123 --ignore-state
 ```
 
 The CLI is read-only except for explicit `packet --out`, `upgrade --out`, `upgrade --comment`, `upgrade --apply`, `init`, and `fixtures --out` commands.

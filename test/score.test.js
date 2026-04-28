@@ -1,6 +1,32 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { analyzeFixture } = require('./helpers');
+const { analyze } = require('../src/score');
+const { DEFAULT_CONFIG } = require('../src/schema');
+
+function syntheticReady(status) {
+  return {
+    source: { type: 'markdown', id: 'synthetic', url: null },
+    issue: {
+      id: 'synthetic',
+      title: 'Add a parameter to the rate limiter',
+      description: '## Acceptance Criteria\n- limiter accepts a burst arg\n- existing tests still pass\n\n## Verification\n```\nnpm test\n```\n\nFiles to touch: src/rateLimiter.js. Existing function: createLimiter().',
+      comments: [],
+      status,
+      type: 'task',
+      priority: 'medium',
+      labels: [],
+      assignee: null,
+      delegatedAgent: null,
+      blockedBy: [],
+      linkedPrs: [],
+      linkedDocs: [],
+      attachments: []
+    },
+    repo: { path: '.', instructionsFiles: ['README.md'], testCommands: ['npm test'], ciConfig: [] },
+    agent: { kind: 'codex', allowedDomains: [] }
+  };
+}
 
 test('vague fixture scores below 45', () => {
   const analysis = analyzeFixture('vague.md');
@@ -54,4 +80,24 @@ test('no-tests fixture has partial verification and suggestions', () => {
   const verification = analysis.dimensions.find((item) => item.id === 'verification_path');
   assert.equal(verification.status, 'partial');
   assert.ok(verification.suggestions.length > 0);
+});
+
+test('closed issue is blocked by default', () => {
+  const analysis = analyze(syntheticReady('completed'), DEFAULT_CONFIG);
+  assert.equal(analysis.readiness, 'blocked');
+  assert.ok(analysis.hardGates.some((gate) => gate.id === 'closed_issue'));
+});
+
+test('--ignore-state suppresses closed gate and surfaces a separate note', () => {
+  const analysis = analyze(syntheticReady('completed'), { ...DEFAULT_CONFIG, ignoreState: true });
+  assert.notEqual(analysis.readiness, 'blocked');
+  assert.ok(!analysis.hardGates.some((gate) => gate.id === 'closed_issue'));
+  assert.ok(analysis.notes.some((note) => /ignore-state/i.test(note)));
+  assert.ok(!analysis.riskNotes.some((note) => /ignore-state/i.test(note)));
+});
+
+test('--ignore-state does not suppress other gates (prompt injection still blocks)', () => {
+  const analysis = analyzeFixture('prompt-injection.md', { ignoreState: true });
+  assert.equal(analysis.readiness, 'blocked');
+  assert.ok(analysis.hardGates.some((gate) => gate.id === 'prompt_injection_or_exfiltration'));
 });

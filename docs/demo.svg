@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" viewBox="0 0 1120 680" role="img" aria-labelledby="title desc">
   <title id="title">Agent Preflight terminal demo</title>
-  <desc id="desc">A terminal-style demo showing a typed Agent Preflight check, upgrade draft, and Linear comment command.</desc>
+  <desc id="desc">A terminal-style demo showing a typed Agent Preflight check with --ignore-state, an upgrade draft, and a Linear comment command.</desc>
   <rect width="1120" height="680" fill="#09090b"/>
   <rect x="58" y="52" width="1004" height="576" rx="24" fill="#121216" stroke="#3f3f46" stroke-width="2"/>
   <rect x="58" y="52" width="1004" height="52" rx="24" fill="#1e1e23"/>
@@ -11,9 +11,9 @@
   <text x="560" y="83" text-anchor="middle" font-family="Menlo, monospace" font-size="14" fill="#a1a1aa">agent-preflight demo</text>
 
   <text x="100" y="150" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>
-  <text x="126" y="150" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight check LIN-123</text>
-  <text x="100" y="190" font-family="Menlo, monospace" font-size="23" fill="#f87171">Agent Preflight: not_ready (14/100, confidence 0.60)</text>
-  <text x="100" y="226" font-family="Menlo, monospace" font-size="19" fill="#a1a1aa">Missing: acceptance criteria, verification, likely files</text>
+  <text x="126" y="150" font-family="Menlo, monospace" font-size="23" fill="#e4e4e7">agent-preflight check LIN-123 --ignore-state</text>
+  <text x="100" y="190" font-family="Menlo, monospace" font-size="23" fill="#f87171">Agent Preflight: not_ready (28/100, confidence 0.85)</text>
+  <text x="100" y="226" font-family="Menlo, monospace" font-size="19" fill="#93c5fd">Notes: closed/cancelled gate suppressed via --ignore-state</text>
   <text x="100" y="262" font-family="Menlo, monospace" font-size="19" fill="#facc15">Next best fix: What observable conditions mean done?</text>
 
   <text x="100" y="326" font-family="Menlo, monospace" font-size="23" fill="#5eead4">$</text>

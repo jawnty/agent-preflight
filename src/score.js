@@ -86,7 +86,9 @@ function impact(body) {
 }
 
 function concreteEvidence(body) {
-  return Boolean(filePaths(body).length || commands(body).length || likelySymbols(body).length || hasAny(body, [
+  if (filePaths(body).length || commands(body).length || likelySymbols(body).length) return true;
+  if (/^\s*(?:WARNING|ERROR|FATAL|FAIL(?:URE|ED)?|TRACEBACK|EXCEPTION)\b[: ]/im.test(body)) return true;
+  return hasAny(body, [
     'stack trace',
     'log',
     'screenshot',
@@ -97,7 +99,7 @@ function concreteEvidence(body) {
     'chrome',
     'firefox',
     'version'
-  ]));
+  ]);
 }
 
 function hasAcceptance(body) {
@@ -116,7 +118,7 @@ function hardGates(issue, config) {
   const sensitiveTerm = String.raw`(?:secret|credential|token|api key|private key|ssh key|production database|admin access)`;
   const requestVerb = String.raw`(?:ask|need|requires?|provide|paste|share|give|grant)`;
 
-  if (['done', 'closed', 'cancelled', 'canceled'].includes(status)) {
+  if (['done', 'closed', 'cancelled', 'canceled', 'completed'].includes(status) && !config.ignoreState) {
     gates.push({ id: 'closed_issue', reason: `Issue status is ${issue.status}.` });
   }
   if ((issue.blockedBy || []).length || /\bblocked by\b/i.test(text)) {
@@ -159,6 +161,7 @@ function scoreTaskClarity(issue) {
   const evidence = [];
   const suggestions = [];
   const body = issue.description || '';
+  const titled = `${issue.title || ''}\n${body}`;
   let score = 0;
 
   if (titleHasActionObject(issue.title)) {
@@ -168,23 +171,23 @@ function scoreTaskClarity(issue) {
   } else {
     suggestions.push('Rewrite the title with an action and concrete object.');
   }
-  if (currentBehavior(body)) {
+  if (currentBehavior(titled)) {
     score += 4;
     signals.push('Current behavior or problem statement is present');
   } else {
     suggestions.push('Describe what happens today.');
   }
-  if (expectedBehavior(body)) {
+  if (expectedBehavior(titled)) {
     score += 4;
     signals.push('Expected behavior or desired outcome is present');
   } else {
     suggestions.push('Describe what should happen instead.');
   }
-  if (impact(body)) {
+  if (impact(titled)) {
     score += 4;
     signals.push('User or business impact is present');
   }
-  if (concreteEvidence(body)) {
+  if (concreteEvidence(titled)) {
     score += 4;
     signals.push('Concrete examples, logs, commands, or reproduction details are present');
   } else {
@@ -502,6 +505,10 @@ function analyze(normalized, config = {}) {
   if (conf < 0.65 && !gates.length) {
     riskNotes.push('Low confidence: ask the agent for a plan before implementation.');
   }
+  const notes = [];
+  if (config.ignoreState && ['done', 'closed', 'cancelled', 'canceled', 'completed'].includes(lower(issue.status))) {
+    notes.push(`Issue status is ${issue.status} — closed/cancelled gate suppressed via --ignore-state.`);
+  }
 
   const result = {
     version: VERSION,
@@ -521,6 +528,7 @@ function analyze(normalized, config = {}) {
     dimensions,
     missingFields: missingFields(dimensions),
     clarifyingQuestions: questions,
+    notes,
     riskNotes,
     packet: null,
     repo: {

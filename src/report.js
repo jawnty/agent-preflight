@@ -29,6 +29,12 @@ function renderReport(analysis) {
     lines.push('');
   }
 
+  if (analysis.notes && analysis.notes.length) {
+    lines.push('Notes');
+    for (const note of analysis.notes) lines.push(`  ${note}`);
+    lines.push('');
+  }
+
   lines.push('Pass');
   lines.push(...(grouped.pass.length ? grouped.pass.map(renderDimension) : ['  None']));
   lines.push('');

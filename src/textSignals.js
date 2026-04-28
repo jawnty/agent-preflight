@@ -144,13 +144,23 @@ function filePaths(text) {
 }
 
 function commands(text) {
-  const found = [];
-  const regex = /\b(?:npm|pnpm|yarn|bun|node|npx|make|pytest|go test|cargo test|mvn|gradle|firebase)\b[^\n`]*/gi;
-  let match;
-  while ((match = regex.exec(normalize(text)))) {
-    found.push(match[0].trim().replace(/[.)]+$/, ''));
+  const source = normalize(text);
+  const tool = String.raw`(?:npm|pnpm|yarn|bun|node|npx|deno|make|pytest|jest|vitest|mocha|tsc|eslint|prettier|go|cargo|mvn|gradle|firebase|gcloud|kubectl|helm|docker|docker-compose|aws|gh|git|ssh|scp|terraform|ansible|bash|sh|python|python3|ruby|rake|phpunit|composer|cmake|ctest|ninja|just|task)`;
+  const args = String.raw`(?:[^\n\`]*?)`;
+  const patterns = [
+    new RegExp(String.raw`\`(${tool}\b${args})\``, 'gi'),
+    new RegExp(String.raw`(?:^|\n)\s{0,4}(?:[$>]\s+)?(${tool}\b${args})$`, 'gim'),
+    new RegExp(String.raw`(?:^|\n)\s{2,}(${tool}\b${args})$`, 'gim')
+  ];
+  const found = new Set();
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(source))) {
+      const text = match[1].trim().replace(/[.)]+$/, '');
+      if (text) found.add(text);
+    }
   }
-  return [...new Set(found)];
+  return [...found];
 }
 
 function likelySymbols(text) {
@@ -173,10 +183,11 @@ function likelySymbols(text) {
 
 function titleHasActionObject(title) {
   const value = lower(title);
-  const action = /\b(fix|add|update|remove|create|implement|prevent|handle|show|hide|validate|document|test|repair|restore|improve|ship|finalize|automate|make|build)\b/.test(value);
+  const action = /\b(fix|add|update|remove|create|implement|prevent|handle|show|hide|validate|document|test|repair|restore|improve|ship|finalize|automate|make|build|throws?|breaks?|fails?|crashes?|moves?|leaks?|hangs?|loops?|misses?|skips?|blocks?|drops?|returns?|renders?|loads?|saves?|reads?|writes?|deletes?|displays?|opens?|closes?|connects?|disconnects?|navigates?|redirects?)\b/.test(value);
+  const negation = /\b(?:does(?:n['’]t| not)|doesn['’]t|isn['’]t|won['’]t|cannot|can['’]t|not (?:saved|working|loading|rendering|connected|persisted|present|visible))\b/.test(value);
   const words = value.split(/\s+/).filter(Boolean);
   const vagueOnly = /^(fix|improve|update|clean up|make better|investigate|figure out)$/i.test(title.trim());
-  return action && words.length >= 4 && !vagueOnly;
+  return (action || negation) && words.length >= 4 && !vagueOnly;
 }
 
 function relativeFixturePath(file) {

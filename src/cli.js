@@ -18,9 +18,9 @@ const { renderUpgrade, renderUpgradeMarkdown } = require('./upgrade');
 
 function usage() {
   return `Usage:
-  agent-preflight check <source> [--json] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--min-score <number>] [--ci] [--progress]
-  agent-preflight packet <source> [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>]
-  agent-preflight upgrade <source> [--dry-run] [--comment] [--apply] [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--progress]
+  agent-preflight check <source> [--json] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--min-score <number>] [--ci] [--progress] [--ignore-state]
+  agent-preflight packet <source> [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--ignore-state]
+  agent-preflight upgrade <source> [--dry-run] [--comment] [--apply] [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--progress] [--ignore-state]
   agent-preflight init [--config <path>] [--force]
   agent-preflight fixtures [--out <path>]`;
 }
@@ -36,7 +36,7 @@ function parseArgs(argv) {
       continue;
     }
     const key = arg.slice(2);
-    if (['json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply', 'progress', 'verbose'].includes(key)) {
+    if (['json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply', 'progress', 'verbose', 'ignore-state'].includes(key)) {
       flags[key] = true;
       continue;
     }
@@ -99,7 +99,7 @@ async function commandCheck(source, flags) {
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
   progress(flags, 'scoring readiness');
-  const analysis = analyze(normalized, config);
+  const analysis = analyze(normalized, { ...config, ignoreState: Boolean(flags['ignore-state']) });
   const minScore = flags['min-score'] === undefined ? (flags.ci ? config.minScore : null) : Number(flags['min-score']);
 
   if (flags.json || flags.ci) {
@@ -122,7 +122,7 @@ async function commandPacket(source, flags) {
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
   progress(flags, 'scoring readiness');
-  const analysis = analyze(normalized, config);
+  const analysis = analyze(normalized, { ...config, ignoreState: Boolean(flags['ignore-state']) });
   const markdown = renderPacket(normalized, analysis);
   if (flags.out) {
     fs.mkdirSync(path.dirname(path.resolve(flags.out)), { recursive: true });
@@ -142,7 +142,7 @@ async function commandUpgrade(source, flags) {
   const { config } = loadConfig(flags.config);
   const normalized = await normalizeSource(source, flags, config);
   progress(flags, 'scoring readiness');
-  const analysis = analyze(normalized, config);
+  const analysis = analyze(normalized, { ...config, ignoreState: Boolean(flags['ignore-state']) });
   progress(flags, 'building upgrade draft');
   const upgrade = renderUpgrade(normalized, analysis);
   const markdown = renderUpgradeMarkdown(normalized, analysis);
