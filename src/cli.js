@@ -16,40 +16,181 @@ const { renderReport } = require('./report');
 const { renderPacket } = require('./packet');
 const { renderUpgrade, renderUpgradeMarkdown } = require('./upgrade');
 
+const PKG = require('../package.json');
+
+const BOOLEAN_FLAGS = new Set([
+  'json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply',
+  'progress', 'verbose', 'ignore-state', 'help', 'version'
+]);
+
+const SHORT_FLAGS = { h: 'help', v: 'version' };
+
+const COMMANDS = ['check', 'packet', 'upgrade', 'init', 'fixtures', 'help'];
+
+function topHelp() {
+  return `agent-preflight v${PKG.version}
+${PKG.description || ''}
+
+USAGE
+  agent-preflight <command> [options]
+  agent-preflight check fixtures/ready-bug.md
+  agent-preflight upgrade ENG-123 --dry-run
+
+COMMANDS
+  check <source>      Score an issue and print a readiness report
+  packet <source>     Generate an agent handoff packet
+  upgrade <source>    Draft a normalized, agent-ready ticket rewrite
+  init                Create .agent-preflight.json with default config
+  fixtures            List or copy bundled example fixtures
+  help [command]      Show help, optionally for a specific command
+
+SOURCES
+  Local file:  ./issue.md  |  fixtures/ready-bug.md
+  Linear:      ENG-123  |  https://linear.app/<workspace>/issue/ENG-123/...
+  GitHub:      https://github.com/<owner>/<repo>/issues/<number>
+
+ENVIRONMENT
+  LINEAR_API_KEY    Required for Linear sources.
+  GITHUB_TOKEN      Optional. Increases GitHub API rate limits.
+
+EXAMPLES
+  agent-preflight check fixtures/vague.md
+  agent-preflight check fixtures/ready-bug.md --json --min-score 80
+  agent-preflight upgrade fixtures/vague.md --dry-run
+  agent-preflight packet ENG-123 --out packet.md
+  LINEAR_API_KEY=… agent-preflight check ENG-123 --ignore-state
+
+Run 'agent-preflight help <command>' for command-specific options.
+Docs: ${PKG.homepage || 'https://github.com/jawnty/agent-preflight'}`;
+}
+
+function commandHelp(command) {
+  switch (command) {
+    case 'check':
+      return `agent-preflight check <source> — score an issue for agent readiness.
+
+The source may be a local Markdown file, a Linear ticket id (e.g. ENG-123)
+or URL, or a GitHub issue URL. Adapter is auto-detected unless --source
+is given. Linear sources require LINEAR_API_KEY in the environment.
+
+OPTIONS
+  --json                  Print JSON instead of the human report
+  --ci                    JSON output + threshold-oriented exit behavior
+  --min-score <number>    Exit code 1 if score is below threshold
+  --progress              Print read/scan/score status to stderr
+  --ignore-state          Suppress the closed/completed/cancelled gate so
+                          terminal-state tickets can still be scored
+  --source <kind>         markdown|github|linear|auto (default: auto)
+  --agent <kind>          codex|claude|copilot|cursor|other
+  --repo <path>           Repo path for environment checks (default: .)
+  --config <path>         Config file (default: .agent-preflight.json)
+
+EXIT CODES
+  0  check completed (and met --min-score if provided)
+  1  check completed but below threshold
+  2  invalid CLI usage or unreadable input
+  3  source adapter auth/network failure`;
+
+    case 'packet':
+      return `agent-preflight packet <source> — generate an agent handoff packet.
+
+Builds a Markdown packet (summary, acceptance criteria, likely files,
+verification, clarifying questions, agent prompt addendum) suitable for
+pasting into an agent's context.
+
+OPTIONS
+  --out <path>            Write packet to a file (default: stdout)
+  --ignore-state          Suppress the closed/completed/cancelled gate
+  --source <kind>         markdown|github|linear|auto
+  --agent <kind>          codex|claude|copilot|cursor|other
+  --repo <path>           Repo path for environment checks`;
+
+    case 'upgrade':
+      return `agent-preflight upgrade <source> — draft a normalized ticket rewrite.
+
+By default this is a dry run that prints the rewrite as Markdown. To
+mutate a real Linear issue, pass --comment (post as a comment) or --apply
+(rewrite the description). Both require a Linear source and LINEAR_API_KEY.
+
+OPTIONS
+  --dry-run               Print the proposed rewrite (default)
+  --out <path>            Write the upgrade draft to a file
+  --comment               Post the proposal as a Linear comment
+  --apply                 Replace the Linear issue description
+  --progress              Print read/scan/score/update status to stderr
+  --ignore-state          Suppress the closed/completed/cancelled gate
+  --source <kind>         markdown|github|linear|auto
+  --agent <kind>          codex|claude|copilot|cursor|other
+  --repo <path>           Repo path for environment checks
+
+SAFETY
+  --apply mutates the Linear issue description and is never the default.
+  Use --comment first to validate the rewrite end-to-end.`;
+
+    case 'init':
+      return `agent-preflight init — create .agent-preflight.json with default config.
+
+OPTIONS
+  --config <path>         Path to write (default: .agent-preflight.json)
+  --force                 Overwrite an existing config file`;
+
+    case 'fixtures':
+      return `agent-preflight fixtures — list or copy bundled example fixtures.
+
+With no flags, prints absolute paths of the bundled fixtures. With --out,
+copies them to the target directory so you can experiment locally.
+
+OPTIONS
+  --out <path>            Copy fixtures to this directory`;
+
+    case 'help':
+    case undefined:
+    case '':
+      return topHelp();
+
+    default:
+      return `Unknown command: ${command}\n\n${topHelp()}`;
+  }
+}
+
 function usage() {
-  return `Usage:
-  agent-preflight check <source> [--json] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--min-score <number>] [--ci] [--progress] [--ignore-state]
-  agent-preflight packet <source> [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--ignore-state]
-  agent-preflight upgrade <source> [--dry-run] [--comment] [--apply] [--out <path>] [--repo <path>] [--source <markdown|github|linear|auto>] [--agent <kind>] [--progress] [--ignore-state]
-  agent-preflight init [--config <path>] [--force]
-  agent-preflight fixtures [--out <path>]`;
+  return topHelp();
 }
 
 function parseArgs(argv) {
-  const command = argv[0];
+  const firstIsFlag = argv[0] && argv[0].startsWith('-');
+  const command = firstIsFlag ? undefined : argv[0];
+  const start = firstIsFlag ? 0 : 1;
   const positionals = [];
   const flags = {};
-  for (let index = 1; index < argv.length; index += 1) {
+  for (let index = start; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (arg && arg.length === 2 && arg.startsWith('-') && !arg.startsWith('--')) {
+      const expanded = SHORT_FLAGS[arg.slice(1)];
+      if (expanded && BOOLEAN_FLAGS.has(expanded)) {
+        flags[expanded] = true;
+        continue;
+      }
+    }
     if (!arg.startsWith('--')) {
       positionals.push(arg);
       continue;
     }
     const key = arg.slice(2);
-    if (['json', 'ci', 'no-color', 'force', 'dry-run', 'comment', 'apply', 'progress', 'verbose', 'ignore-state'].includes(key)) {
+    if (BOOLEAN_FLAGS.has(key)) {
       flags[key] = true;
       continue;
     }
     const value = argv[index + 1];
     if (!value || value.startsWith('--')) {
-      const error = new Error(`Missing value for --${key}\n${usage()}`);
+      const error = new Error(`Missing value for --${key}\n\nRun 'agent-preflight help' for usage.`);
       error.exitCode = 2;
       throw error;
     }
     flags[key] = value;
     index += 1;
   }
-  return { command, source: positionals[0], flags };
+  return { command, source: positionals[0], positionals, flags };
 }
 
 function shouldShowProgress(flags) {
@@ -200,9 +341,30 @@ function commandFixtures(flags) {
 }
 
 async function run(argv) {
-  const { command, source, flags } = parseArgs(argv);
-  if (!command || command === 'help' || command === '--help' || command === '-h') {
-    process.stdout.write(`${usage()}\n`);
+  const { command, source, positionals, flags } = parseArgs(argv);
+
+  if (flags.version) {
+    process.stdout.write(`agent-preflight ${PKG.version}\n`);
+    return;
+  }
+
+  if (!command) {
+    process.stdout.write(`${topHelp()}\n`);
+    return;
+  }
+
+  if (command === 'help') {
+    const topic = positionals[0];
+    process.stdout.write(`${commandHelp(topic)}\n`);
+    return;
+  }
+
+  if (flags.help) {
+    if (COMMANDS.includes(command)) {
+      process.stdout.write(`${commandHelp(command)}\n`);
+      return;
+    }
+    process.stdout.write(`${topHelp()}\n`);
     return;
   }
 
@@ -212,7 +374,7 @@ async function run(argv) {
   if (command === 'init') return commandInit(flags);
   if (command === 'fixtures') return commandFixtures(flags);
 
-  const error = new Error(`Unknown command: ${command}\n${usage()}`);
+  const error = new Error(`Unknown command: ${command}\n\nRun 'agent-preflight help' for usage.`);
   error.exitCode = 2;
   throw error;
 }
