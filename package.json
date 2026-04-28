@@ -1,5 +1,5 @@
 {
-  "name": "agent-preflight",
+  "name": "@jawnty/agent-preflight",
   "version": "0.3.0",
   "description": "Local-first deterministic CLI that scores whether an issue is ready for an autonomous coding agent (Linear, GitHub, or Markdown). No LLM calls, no hosted backend.",
   "keywords": [

@@ -8,13 +8,13 @@ No hosted backend is required. No LLM calls are made.
 
 ```bash
 # Global install (binary on your PATH)
-npm install -g agent-preflight
+npm install -g @jawnty/agent-preflight
 
 # Or run on demand without installing
-npx agent-preflight check ENG-123
+npx @jawnty/agent-preflight check ENG-123
 ```
 
-Then:
+The binary name is `agent-preflight` (the `@jawnty/` prefix is just the npm scope). Then:
 
 ```bash
 agent-preflight check fixtures/ready-bug.md
@@ -26,8 +26,8 @@ LINEAR_API_KEY=… agent-preflight check ENG-123
 To try it without installing globally, copy a sample fixture out:
 
 ```bash
-npx agent-preflight fixtures --out ./preflight-fixtures
-npx agent-preflight check ./preflight-fixtures/ready-bug.md
+npx @jawnty/agent-preflight fixtures --out ./preflight-fixtures
+npx @jawnty/agent-preflight check ./preflight-fixtures/ready-bug.md
 ```
 
 ## Develop
