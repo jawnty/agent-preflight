@@ -48,6 +48,16 @@ agent-preflight packet <source> [options]
 agent-preflight upgrade <source> [options]
 agent-preflight init [options]
 agent-preflight fixtures [options]
+agent-preflight help [command]
+```
+
+For built-in help and version:
+
+```bash
+agent-preflight                  # top-level help
+agent-preflight --help           # same
+agent-preflight help <command>   # per-command help (also: agent-preflight <command> --help)
+agent-preflight --version        # version (also: -v)
 ```
 
 `check` prints a human report by default:
