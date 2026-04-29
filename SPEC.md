@@ -50,6 +50,46 @@ There is already a PyPI package named `agent-preflight` focused on previewing an
 5. Be useful before auth, Linear setup, or a hosted backend.
 6. Produce an artifact a coding agent can actually use.
 7. Prefer "ask for plan first" over false confidence on borderline work.
+8. Keep the interface small. The CLI should infer the artifact shape before it asks the user for another flag.
+9. Preflight artifacts for agent work, not generic document quality. Specs and decisions are supported only insofar as they can be turned into reliable agent action.
+
+## Artifact-Aware Preflight
+
+The interface remains:
+
+```bash
+agent-preflight check <source>
+agent-preflight packet <source>
+agent-preflight upgrade <source>
+```
+
+The tool should infer what kind of artifact it is reading and choose the safest next agentic action.
+
+Supported artifact kinds:
+
+- `ticket`: an issue, bug, task, or feature request whose next step is implementation.
+- `product_spec`: a product/implementation spec, PRD, design brief, or high-level build request whose next step is planning, decomposition, or a guarded implementation brief.
+- `decision_doc`: a research note, RFC, ADR, options memo, or strategic decision document whose next step is clarifying tradeoffs and follow-up work, not direct coding.
+
+Detection rules:
+
+- Linear and GitHub sources default to `ticket` unless the content is overwhelmingly spec-like or decision-like.
+- Local Markdown may be classified as any supported artifact kind.
+- Frontmatter `type` may override inference when it clearly says `ticket`, `task`, `bug`, `feature`, `spec`, `product_spec`, `prd`, `decision`, `rfc`, or `adr`.
+- If confidence is low, fall back to `ticket` and surface a note rather than surprising the user.
+- The result JSON should include `artifact.kind`, `artifact.confidence`, `artifact.goal`, and `artifact.signals`.
+
+Artifact goals:
+
+- `ticket`: improve executability before assigning to a coding agent.
+- `product_spec`: improve completeness before decomposing or handing to an implementation agent.
+- `decision_doc`: improve decision quality before deriving implementation work.
+
+Examples:
+
+- `Fix invoice PDF download 500 on Safari` -> `ticket`, recommended action can be `assign_agent` when ready.
+- `Build Tetris` -> `product_spec`, but likely `not_ready`; recommended action should be `generate_implementation_brief` or `ask_for_plan_first`, not blind implementation.
+- `Infrastructure pivot: 6 options` -> `decision_doc`; recommended action should be `clarify_decision`, not `assign_agent`.
 
 ## V1 Scope
 
@@ -64,6 +104,8 @@ There is already a PyPI package named `agent-preflight` focused on previewing an
 - JSON and human-readable output.
 - Markdown handoff packet generation.
 - Upgrade draft generation for turning weak tickets into agent-ready issue descriptions.
+- Artifact-aware scoring for local Markdown specs and decision docs while preserving existing ticket behavior.
+- Spec-aware upgrade drafts that produce implementation briefs instead of ticket-shaped bug reports.
 - Linear comment/apply mutation behind explicit flags.
 - Test fixtures for good, vague, risky, blocked, and borderline issues.
 - Automated tests using Node's built-in `node:test`.
@@ -76,7 +118,7 @@ There is already a PyPI package named `agent-preflight` focused on previewing an
 - Browser extension.
 - Full Linear app.
 - Full Jira support.
-- Mutating tracker issues.
+- Automatic tracker mutation without explicit `--comment` or `--apply`.
 - Running a coding agent.
 - LLM scoring.
 - Semantic codebase search.
@@ -310,7 +352,7 @@ Caps should be reported in `capsApplied`.
 
 ## Scoring Algorithm
 
-Total score: 100 points.
+Total score: 100 points. The ticket rubric remains the default and must not regress when artifact detection is added.
 
 The algorithm should be deterministic and explainable. Each dimension returns:
 
@@ -467,6 +509,64 @@ Suggested scoring:
 - 4 if sensitive domain appears without mitigation.
 - 0 if it should be blocked by hard gates.
 
+## Artifact-Specific Rubrics
+
+Artifact detection chooses the rubric before scoring. All rubrics remain deterministic and local-first.
+
+### Ticket Rubric
+
+Tickets use the seven dimensions above:
+
+- Task clarity
+- Scope boundedness
+- Acceptance criteria
+- Implementation guidance
+- Verification path
+- Agent environment readiness
+- Risk profile
+
+### Product Spec Rubric
+
+Product specs answer a different question:
+
+> Is this complete enough to turn into a safe implementation brief or decomposition plan?
+
+Dimensions:
+
+- Problem / user context, 20 points: user, problem, why now, concrete scenario.
+- Goal clarity, 15 points: explicit outcome and desired product behavior.
+- Scope / constraints, 15 points: in-scope, out-of-scope, non-goals, platform constraints.
+- Requirements, 20 points: functional requirements, states, edge cases, interaction details.
+- Success / verification, 15 points: observable success metrics, test commands, QA, evaluation flow.
+- Agent handoff readiness, 5 points: repo/platform/component hints or implementation areas.
+- Risk profile, 10 points: same sensitive-domain and mitigation logic as tickets.
+
+Recommended action:
+
+- `generate_implementation_brief` when the spec is ready.
+- `ask_for_plan_first` for borderline specs.
+- `request_clarification` when the spec is too vague.
+
+### Decision Doc Rubric
+
+Decision docs answer:
+
+> Is this decision clear enough to derive follow-up work without pretending the decision is already made?
+
+Dimensions:
+
+- Context, 20 points: decision pressure, problem, stakeholders, why now.
+- Options, 20 points: alternatives being compared.
+- Tradeoffs / evidence, 20 points: pros, cons, risks, validation, research signals.
+- Recommendation, 20 points: preferred path, owner, approval needed, decision status.
+- Follow-up readiness, 10 points: concrete next tasks or open questions.
+- Risk profile, 10 points.
+
+Recommended action:
+
+- `derive_followup_tasks` only when the decision is clear.
+- `clarify_decision` when more owner/evidence/recommendation context is needed.
+
 ## Readiness Bands
 
 - `ready`: score >= 80 and no blocking hard gates.
@@ -481,6 +581,8 @@ Recommended action:
 - `ask_for_plan_first`: `ready_with_cautions`.
 - `request_clarification`: `needs_human_refinement` or `not_ready`.
 - `keep_human_owned`: `blocked` or high-risk issue.
+
+Artifact-specific actions may replace the ticket defaults. For example, a ready product spec should return `generate_implementation_brief`, and a decision document should return `clarify_decision` or `derive_followup_tasks` rather than `assign_agent`.
 
 ## Confidence Score
 
@@ -512,6 +614,12 @@ Confidence should not change readiness directly, but low confidence should add a
   "score": 84,
   "confidence": 0.9,
   "recommendedAction": "assign_agent",
+  "artifact": {
+    "kind": "ticket",
+    "confidence": 0.94,
+    "goal": "improve executability before assigning to a coding agent",
+    "signals": ["source type is markdown", "frontmatter type is bug"]
+  },
   "source": {
     "type": "markdown",
     "id": "ready-bug",
@@ -578,6 +686,8 @@ Next best fix
 ```
 
 A `Notes` section appears above `Pass` whenever the analysis populates `analysis.notes`. Today this surfaces only when `--ignore-state` suppressed the closed/completed/cancelled gate; future invocation-meta signals can land in the same channel without polluting the content-derived `Cautions` and `riskNotes` sections.
+
+The human report should also show the detected artifact kind and confidence so the user can catch misclassification before acting on the result.
 
 ```text
 Agent Preflight: not_ready (28/100, confidence 0.85)
@@ -664,6 +774,9 @@ Safety rules:
 - `--apply` must never be the default.
 - The upgrade must preserve uncertainty as TODOs or human questions rather than inventing missing product intent.
 - Repo inspection is read-only.
+- For tickets, `upgrade` produces a ticket-shaped rewrite with acceptance criteria and verification.
+- For product specs, `upgrade` produces an implementation brief with problem context, requirements, scope, verification, and likely implementation areas.
+- For decision docs, `upgrade` produces a decision brief with options, tradeoffs, recommendation, and follow-up tasks.
 
 ## Clarifying Question Generation
 
@@ -676,6 +789,10 @@ Generate deterministic questions from missing dimensions:
 - Missing technical anchors: `Which file, route, component, or API is most likely involved?`
 - Risk without mitigation: `What rollback or review path should the agent follow if this touches a sensitive area?`
 - External context inaccessible: `Can you summarize the linked context directly in the issue?`
+- Product spec missing requirements: `What concrete functional requirements, states, or edge cases should the implementation cover?`
+- Product spec missing success/verification: `How should an agent or reviewer know the spec has been implemented correctly?`
+- Decision doc missing options: `What alternatives should be compared before deriving implementation work?`
+- Decision doc missing recommendation: `What is the recommended direction, owner, and approval state?`
 
 ## Implementation Architecture
 
@@ -694,6 +811,7 @@ agent-preflight/
       github.js
       linear.js
       markdown.js
+    artifact.js
     config.js
     detectRepo.js
     packet.js
@@ -702,6 +820,9 @@ agent-preflight/
     score.js
     textSignals.js
   fixtures/
+    build-tetris.md
+    product-spec.md
+    decision-doc.md
     ready-bug.md
     good-feature.md
     vague.md
@@ -725,11 +846,12 @@ agent-preflight/
 - `markdown.js`: parse local Markdown and frontmatter.
 - `github.js`: parse GitHub issue URLs and fetch issue JSON.
 - `linear.js`: parse Linear URLs/ids and fetch issue JSON when token is present.
+- `artifact.js`: infer `ticket`, `product_spec`, or `decision_doc` from source type, frontmatter, headings, and text signals.
 - `config.js`: load defaults and merge `.agent-preflight.json`.
 - `detectRepo.js`: inspect local repo files and package scripts.
 - `textSignals.js`: pure regex/string helpers.
 - `score.js`: hard gates, dimensions, caps, confidence, readiness band.
-- `packet.js`: build packet object and Markdown.
+- `packet.js`: build ticket/spec/decision handoff packet objects and Markdown.
 - `report.js`: render readable terminal output.
 - `schema.js`: constants and default weights.
 
@@ -742,13 +864,19 @@ Required tests:
 - Markdown parser extracts title, frontmatter, and body.
 - Vague fixture scores below 45.
 - Ready bug fixture scores at least 80.
+- Ready bug fixture is still classified as `ticket` and recommends `assign_agent`.
 - Good feature fixture scores at least 75.
+- High-level build request such as `Build Tetris` is classified as `product_spec` and `not_ready`.
+- Complete product spec is classified as `product_spec` and recommends `generate_implementation_brief`.
+- Decision document is classified as `decision_doc` and does not recommend direct implementation.
 - Risky migration fixture applies risk cap or caution.
 - Prompt-injection fixture returns `blocked`.
 - External-context fixture is blocked or capped when context is inaccessible.
 - No-tests fixture has partial verification and concrete suggestions.
 - JSON output is parseable and contains all required top-level fields.
 - `packet` command prints Markdown with summary, criteria, verification, and questions.
+- `packet` command prints spec-oriented sections for product specs and decision-oriented sections for decision docs.
+- `upgrade` command prints a mode line and artifact-appropriate draft for tickets, product specs, and decision docs.
 - `--min-score` exits with code 1 when threshold is not met.
 - `init` writes config without overwriting unless `--force` is supplied.
 - A closed/completed/cancelled issue returns `blocked` by default.
@@ -763,6 +891,8 @@ npm install
 npm test
 node bin/agent-preflight.js check fixtures/vague.md
 node bin/agent-preflight.js check fixtures/ready-bug.md
+node bin/agent-preflight.js check fixtures/build-tetris.md
+node bin/agent-preflight.js upgrade fixtures/product-spec.md
 node bin/agent-preflight.js packet fixtures/ready-bug.md --out packet.md
 ```
 
@@ -772,7 +902,9 @@ The demo asset should show the contrast:
 2. See `not_ready` with missing acceptance criteria, verification, and technical anchors.
 3. Run on `fixtures/ready-bug.md`.
 4. See `ready`.
-5. Generate a packet.
+5. Run on `fixtures/build-tetris.md` and show a high-level spec being rejected as under-specified.
+6. Generate a product-spec implementation brief.
+7. Generate a packet.
 
 If a real GIF can be generated in the environment, create `docs/demo.gif`. If not, include `docs/demo.svg` and document how to convert it.
 
@@ -784,8 +916,11 @@ Before handing the prototype back:
 2. Run `node bin/agent-preflight.js check fixtures/vague.md`.
 3. Run `node bin/agent-preflight.js check fixtures/ready-bug.md --json` and parse it.
 4. Run `node bin/agent-preflight.js packet fixtures/ready-bug.md`.
-5. Run `node bin/agent-preflight.js check fixtures/vague.md --min-score 80` and confirm exit code 1.
-6. Run `node bin/agent-preflight.js init` in a temporary directory and confirm config is created.
+5. Run `node bin/agent-preflight.js check fixtures/build-tetris.md --json` and confirm artifact kind `product_spec`, readiness `not_ready`.
+6. Run `node bin/agent-preflight.js check fixtures/product-spec.md --json` and confirm recommended action `generate_implementation_brief`.
+7. Run `node bin/agent-preflight.js packet fixtures/decision-doc.md` and confirm it warns not to implement directly.
+8. Run `node bin/agent-preflight.js check fixtures/vague.md --min-score 80` and confirm exit code 1.
+9. Run `node bin/agent-preflight.js init` in a temporary directory and confirm config is created.
 
 ## Future Versions
 

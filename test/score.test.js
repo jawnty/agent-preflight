@@ -28,6 +28,30 @@ function syntheticReady(status) {
   };
 }
 
+function syntheticMarkdown(title, description) {
+  return {
+    source: { type: 'markdown', id: 'synthetic', url: null },
+    issue: {
+      id: 'synthetic',
+      title,
+      description,
+      comments: [],
+      status: 'open',
+      type: null,
+      priority: null,
+      labels: [],
+      assignee: null,
+      delegatedAgent: null,
+      blockedBy: [],
+      linkedPrs: [],
+      linkedDocs: [],
+      attachments: []
+    },
+    repo: { path: '.', instructionsFiles: [], testCommands: ['npm test'], ciConfig: [] },
+    agent: { kind: 'codex', allowedDomains: [] }
+  };
+}
+
 test('vague fixture scores below 45', () => {
   const analysis = analyzeFixture('vague.md');
   assert.equal(analysis.readiness, 'not_ready');
@@ -38,7 +62,9 @@ test('vague fixture scores below 45', () => {
 
 test('ready bug fixture scores at least 80', () => {
   const analysis = analyzeFixture('ready-bug.md');
+  assert.equal(analysis.artifact.kind, 'ticket');
   assert.equal(analysis.readiness, 'ready');
+  assert.equal(analysis.recommendedAction, 'assign_agent');
   assert.ok(analysis.score >= 80, `expected score >= 80, got ${analysis.score}`);
 });
 
@@ -53,6 +79,39 @@ test('Linear prompt fixture recognizes rich-text sections', () => {
   assert.ok(analysis.score >= 55, `expected score >= 55, got ${analysis.score}`);
   assert.ok(!analysis.missingFields.includes('acceptance_criteria'));
   assert.ok(!analysis.missingFields.includes('verification_path'));
+});
+
+test('high-level build request is treated as an under-specified product spec', () => {
+  const analysis = analyzeFixture('build-tetris.md');
+  assert.equal(analysis.artifact.kind, 'product_spec');
+  assert.equal(analysis.readiness, 'not_ready');
+  assert.equal(analysis.recommendedAction, 'request_clarification');
+  assert.ok(analysis.missingFields.includes('spec_requirements'));
+  assert.ok(analysis.missingFields.includes('spec_success_verification'));
+  assert.ok(analysis.clarifyingQuestions.some((question) => /requirements/i.test(question)));
+});
+
+test('frontmatter-free build request can still infer product spec', () => {
+  const analysis = analyze(syntheticMarkdown('Build Tetris', 'Build a Tetris game.'), DEFAULT_CONFIG);
+  assert.equal(analysis.artifact.kind, 'product_spec');
+  assert.equal(analysis.readiness, 'not_ready');
+  assert.ok(analysis.artifact.confidence > 0.5);
+});
+
+test('complete product spec is ready for implementation briefing', () => {
+  const analysis = analyzeFixture('product-spec.md');
+  assert.equal(analysis.artifact.kind, 'product_spec');
+  assert.equal(analysis.readiness, 'ready');
+  assert.equal(analysis.recommendedAction, 'generate_implementation_brief');
+  assert.ok(analysis.score >= 80, `expected score >= 80, got ${analysis.score}`);
+});
+
+test('decision document is not treated as a direct implementation ticket', () => {
+  const analysis = analyzeFixture('decision-doc.md');
+  assert.equal(analysis.artifact.kind, 'decision_doc');
+  assert.notEqual(analysis.recommendedAction, 'assign_agent');
+  assert.ok(['clarify_decision', 'derive_followup_tasks'].includes(analysis.recommendedAction));
+  assert.ok(analysis.score >= 60, `expected score >= 60, got ${analysis.score}`);
 });
 
 test('risky migration fixture applies risk caution or cap', () => {

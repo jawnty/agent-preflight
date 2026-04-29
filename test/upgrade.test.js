@@ -24,6 +24,46 @@ test('upgrade draft includes repo-grounded likely files and verification command
   assert.match(markdown, /npm test -- invoices/);
 });
 
+test('product spec upgrade draft renders an implementation brief', () => {
+  const normalized = parseMarkdownFile(fixture('product-spec.md'), {
+    repo: {
+      path: root,
+      instructionsFiles: [],
+      testCommands: ['npm test'],
+      packageFiles: ['package.json'],
+      ciConfig: []
+    },
+    agent: { kind: 'codex' }
+  });
+  const analysis = analyze(normalized, DEFAULT_CONFIG);
+  const markdown = renderUpgradeMarkdown(normalized, analysis);
+  assert.match(markdown, /Mode: Product spec implementation brief/);
+  assert.match(markdown, /## Problem \/ User Context/);
+  assert.match(markdown, /## Requirements/);
+  assert.match(markdown, /## Success Metrics \/ Verification/);
+  assert.doesNotMatch(markdown, /## Current Behavior/);
+});
+
+test('decision document upgrade draft renders a decision brief', () => {
+  const normalized = parseMarkdownFile(fixture('decision-doc.md'), {
+    repo: {
+      path: root,
+      instructionsFiles: [],
+      testCommands: ['npm test'],
+      packageFiles: ['package.json'],
+      ciConfig: []
+    },
+    agent: { kind: 'codex' }
+  });
+  const analysis = analyze(normalized, DEFAULT_CONFIG);
+  const markdown = renderUpgradeMarkdown(normalized, analysis);
+  assert.match(markdown, /Mode: Decision clarification brief/);
+  assert.match(markdown, /## Decision Question/);
+  assert.match(markdown, /## Options/);
+  assert.match(markdown, /## Recommendation/);
+  assert.doesNotMatch(markdown, /## Acceptance Criteria/);
+});
+
 test('candidateFiles can infer files from repo names without modifying the repo', () => {
   const normalized = {
     issue: {

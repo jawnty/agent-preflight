@@ -20,8 +20,9 @@ function renderReport(analysis) {
   const lines = [
     `Agent Preflight: ${analysis.readiness} (${analysis.score}/100, confidence ${analysis.confidence.toFixed(2)})`,
     `Recommended action: ${analysis.recommendedAction}`,
+    analysis.artifact ? `Detected artifact: ${analysis.artifact.kind} (confidence ${analysis.artifact.confidence.toFixed(2)})` : null,
     ''
-  ];
+  ].filter((line) => line !== null);
 
   if (analysis.hardGates.length) {
     lines.push('Blocked');

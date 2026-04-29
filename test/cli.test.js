@@ -17,7 +17,7 @@ test('check --json output is parseable and contains required top-level fields', 
   const result = cli(['check', fixture('ready-bug.md'), '--json']);
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout);
-  for (const key of ['version', 'generatedAt', 'readiness', 'score', 'confidence', 'recommendedAction', 'source', 'hardGates', 'capsApplied', 'dimensions', 'missingFields', 'clarifyingQuestions', 'riskNotes', 'packet', 'repo']) {
+  for (const key of ['version', 'generatedAt', 'readiness', 'score', 'confidence', 'recommendedAction', 'artifact', 'source', 'hardGates', 'capsApplied', 'dimensions', 'missingFields', 'clarifyingQuestions', 'riskNotes', 'packet', 'repo']) {
     assert.ok(Object.hasOwn(parsed, key), `missing ${key}`);
   }
 });

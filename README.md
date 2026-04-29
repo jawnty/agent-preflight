@@ -1,6 +1,6 @@
 # Agent Preflight
 
-Agent Preflight is a local-first CLI that checks whether a specific issue is ready for an autonomous coding agent. It scores Linear, GitHub, or local Markdown issues deterministically, explains the evidence, generates a handoff packet, and can draft or apply a safer ticket upgrade.
+Agent Preflight is a local-first CLI that checks whether a specific issue, spec, or decision artifact is ready for autonomous agent work. It scores Linear, GitHub, or local Markdown inputs deterministically, explains the evidence, generates a handoff packet, and can draft or apply a safer upgrade.
 
 No hosted backend is required. No LLM calls are made.
 
@@ -18,6 +18,8 @@ The binary name is `agent-preflight` (the `@jawnty/` prefix is just the npm scop
 
 ```bash
 agent-preflight check fixtures/ready-bug.md
+agent-preflight check fixtures/build-tetris.md
+agent-preflight upgrade fixtures/product-spec.md
 agent-preflight upgrade fixtures/vague.md --progress
 agent-preflight packet fixtures/ready-bug.md --out packet.md
 LINEAR_API_KEY=… agent-preflight check ENG-123
@@ -38,6 +40,7 @@ cd agent-preflight
 npm install
 npm test
 node bin/agent-preflight.js check fixtures/vague.md
+node bin/agent-preflight.js check fixtures/product-spec.md
 ```
 
 ## Commands
@@ -64,6 +67,8 @@ agent-preflight --version        # version (also: -v)
 
 ```bash
 node bin/agent-preflight.js check fixtures/ready-bug.md
+node bin/agent-preflight.js check fixtures/build-tetris.md
+node bin/agent-preflight.js check fixtures/product-spec.md
 ```
 
 Use JSON for CI or downstream tooling:
@@ -83,13 +88,17 @@ LINEAR_API_KEY=... agent-preflight check ENG-123 --ignore-state
 
 ```bash
 node bin/agent-preflight.js packet fixtures/ready-bug.md
+node bin/agent-preflight.js packet fixtures/product-spec.md
+node bin/agent-preflight.js packet fixtures/decision-doc.md
 node bin/agent-preflight.js packet fixtures/ready-bug.md --out packet.md
 ```
 
-`upgrade` drafts a normalized, agent-ready ticket rewrite:
+`upgrade` drafts an artifact-aware upgrade. Tickets become agent-ready ticket rewrites, product specs become implementation briefs, and decision docs become decision briefs with follow-up tasks:
 
 ```bash
 node bin/agent-preflight.js upgrade fixtures/vague.md
+node bin/agent-preflight.js upgrade fixtures/product-spec.md
+node bin/agent-preflight.js upgrade fixtures/decision-doc.md
 node bin/agent-preflight.js upgrade fixtures/vague.md --out upgrade.md
 node bin/agent-preflight.js upgrade fixtures/vague.md --progress
 ```
@@ -143,9 +152,29 @@ node bin/agent-preflight.js fixtures --out ./preflight-fixtures
 - `--ignore-state`: suppress the closed/completed/cancelled hard gate (same meaning as on `check`).
 - `--repo`, `--source`, and `--agent`: same meaning as `check`.
 
+## Artifact Detection
+
+The interface stays intentionally small: use `check`, `packet`, or `upgrade` and point the tool at the source. Agent Preflight infers the artifact kind before choosing a rubric.
+
+- `ticket`: an issue, bug, task, or feature request whose next step is implementation.
+- `product_spec`: a PRD, implementation spec, design brief, or high-level build request whose next step is planning, decomposition, or a guarded implementation brief.
+- `decision_doc`: an RFC, ADR, research note, or options memo whose next step is clarifying the decision and deriving follow-up work.
+
+Linear and GitHub sources are ticket-first. Local Markdown can be any supported artifact kind. Optional frontmatter can make intent explicit:
+
+```yaml
+---
+type: spec
+---
+```
+
+Supported frontmatter types include `ticket`, `task`, `bug`, `feature`, `spec`, `product_spec`, `prd`, `decision`, `rfc`, and `adr`. Low-confidence inputs fall back to the ticket rubric and surface the detected artifact in the report and JSON.
+
 ## Scoring Model
 
 The score is deterministic and totals 100 points:
+
+Tickets use:
 
 - Task clarity: 20
 - Scope boundedness: 15
@@ -155,6 +184,10 @@ The score is deterministic and totals 100 points:
 - Agent environment readiness: 10
 - Risk profile: 10
 
+Product specs use problem/user context, goal clarity, scope/constraints, requirements, success/verification, agent handoff readiness, and risk profile.
+
+Decision docs use context, options, tradeoffs/evidence, recommendation, follow-up readiness, and risk profile.
+
 Readiness bands:
 
 - `ready`: score >= 80 and no blocking gate.
@@ -162,6 +195,8 @@ Readiness bands:
 - `needs_human_refinement`: score 45 to 64 or severe missing sections.
 - `not_ready`: score below 45.
 - `blocked`: a hard gate triggered.
+
+Artifact-specific recommended actions keep agents from blindly implementing the wrong thing: product specs can return `generate_implementation_brief`, and decision docs return `clarify_decision` or `derive_followup_tasks` instead of `assign_agent`.
 
 Hard gates block closed, completed, or cancelled issues, explicit blockers, issues already delegated to another agent, requests for secrets or privileged access, prompt-injection/exfiltration text, and inaccessible private external context without an in-issue summary. Pass `--ignore-state` on `check`/`packet`/`upgrade` to preflight a closed/completed/cancelled ticket anyway (e.g. for post-mortems); other gates are unaffected.
 
@@ -183,6 +218,8 @@ assignee: alice
 delegatedAgent:
 ---
 ```
+
+For specs or decision documents, set `type: spec` or `type: decision` when you want to remove ambiguity. This is optional; the tool also infers from headings such as `Requirements`, `Success Metrics`, `Options`, `Tradeoffs`, and `Recommendation`.
 
 It also understands Linear's "Copy as prompt" export format, including `<issue>`,
 `<title>`, `<description>`, team name, and copied comment threads. That makes it
@@ -236,6 +273,10 @@ Representative validation commands:
 npm test
 node bin/agent-preflight.js check fixtures/vague.md
 node bin/agent-preflight.js check fixtures/ready-bug.md --json
+node bin/agent-preflight.js check fixtures/build-tetris.md --json
+node bin/agent-preflight.js check fixtures/product-spec.md --json
+node bin/agent-preflight.js packet fixtures/decision-doc.md
+node bin/agent-preflight.js upgrade fixtures/product-spec.md
 node bin/agent-preflight.js upgrade fixtures/vague.md
 node bin/agent-preflight.js packet fixtures/ready-bug.md
 node bin/agent-preflight.js check fixtures/vague.md --min-score 80
