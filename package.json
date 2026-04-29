@@ -1,6 +1,6 @@
 {
   "name": "@jawnty/agent-preflight",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Local-first deterministic CLI that scores whether an issue, spec, or decision artifact is ready for autonomous agent work. No LLM calls, no hosted backend.",
   "keywords": [
     "agent",

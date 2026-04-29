@@ -55,7 +55,10 @@ function currentBehavior(body) {
     'returns 500',
     'error',
     'bug',
-    'problem'
+    'problem',
+    'right now',
+    /\bcurrent\s+(?:state|status|setup|implementation|logging|approach|design|workflow|behavior|version|flow)\b/i,
+    /\bis\s+(?:currently|today|ad-hoc|missing|absent)\b/i
   ]);
 }
 
@@ -68,7 +71,12 @@ function expectedBehavior(body) {
     'desired',
     'returns',
     'shows',
-    'does not'
+    'does not',
+    'goal is',
+    'we want',
+    'we need',
+    'needs to',
+    /\b(?:expected|desired|target)\s+(?:state|outcome|result|behavior|behaviour)\b/i
   ]);
 }
 
@@ -331,6 +339,10 @@ function scoreVerification(issue) {
     score += 5;
     signals.push('Automated test command is included');
     evidence.push(...foundCommands.filter((command) => /\b(test|spec)\b/i.test(command)));
+  } else if (/\b(playwright|cypress|jest|vitest|mocha|pytest|rspec|junit|go test|cargo test|phpunit|smoke tests?|unit tests?|integration tests?|end-to-end tests?|e2e tests?)\b/i.test(body)) {
+    score += 3;
+    signals.push('Test framework named in prose without a runnable command');
+    suggestions.push('Add an explicit test command (e.g. `npm test`) so the agent knows how to run it.');
   } else {
     suggestions.push('Add an automated test command if one exists.');
   }
@@ -792,6 +804,16 @@ function missingFields(dimensions) {
   return dimensions.filter((item) => item.status === 'missing').map((item) => item.id);
 }
 
+function isBugShaped(issue) {
+  const title = lower(issue.title || '');
+  const labels = (issue.labels || []).map((label) => lower(typeof label === 'string' ? label : label && label.name ? label.name : ''));
+  if (labels.includes('bug')) return true;
+  if (lower(issue.type) === 'bug') return true;
+  if (/\b(bug|fix|broken|crash(?:es|ed|ing)?|error|fails?|fail(?:ing|ed)|throws?|hangs?|leaks?|regression|stuck)\b/.test(title)) return true;
+  if (/\b(?:does(?:n['’]t| not)|isn['’]t|cannot|can['’]t|won['’]t|not (?:saved|working|loading|connected|persisted))\b/.test(title)) return true;
+  return false;
+}
+
 function clarifyingQuestions(issue, dimensions, gates, artifact = { kind: 'ticket' }) {
   const questions = [];
   const ids = new Set(missingFields(dimensions));
@@ -809,10 +831,19 @@ function clarifyingQuestions(issue, dimensions, gates, artifact = { kind: 'ticke
     if (ids.has('decision_recommendation')) questions.push('What is the recommended direction and who needs to approve it?');
     if (ids.has('decision_followup')) questions.push('What concrete follow-up tasks should come out of this decision?');
   } else {
+    const isBug = isBugShaped(issue);
     if (ids.has('acceptance_criteria')) questions.push('What observable conditions should be true when this is done?');
     if (ids.has('verification_path')) questions.push('What command or manual flow should the agent use to verify the change?');
-    if (!currentBehavior(issue.description || '')) questions.push('What happens today, and where can the agent reproduce it?');
-    if (!expectedBehavior(issue.description || '')) questions.push('What should happen instead?');
+    if (!currentBehavior(issue.description || '')) {
+      questions.push(isBug
+        ? 'What happens today, and where can the agent reproduce it?'
+        : 'What is the current state today, and how can the agent observe it?');
+    }
+    if (!expectedBehavior(issue.description || '')) {
+      questions.push(isBug
+        ? 'What should happen instead?'
+        : 'What outcome should the agent produce, and how will it be recognized?');
+    }
     if (ids.has('implementation_guidance')) questions.push('Which file, route, component, or API is most likely involved?');
   }
   const risk = dimensions.find((item) => item.id === 'risk_profile');

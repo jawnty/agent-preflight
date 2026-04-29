@@ -55,7 +55,18 @@ Sleep 400ms
 Enter
 Sleep 4500ms
 
-# ── Frame 4: --ignore-state lets you preflight a closed Linear ticket ───
+# ── Frame 4: artifact-aware — "Build Tetris" is detected as a product_spec ──
+Type "clear" Enter
+Sleep 200ms
+Type "# A high-level build request is detected as a product_spec, not a ticket"
+Enter
+Sleep 400ms
+Type "node bin/agent-preflight.js check fixtures/build-tetris.md"
+Sleep 400ms
+Enter
+Sleep 4000ms
+
+# ── Frame 5: --ignore-state lets you preflight a closed Linear ticket ───
 Type "clear" Enter
 Sleep 200ms
 Type "# --ignore-state: preflight a closed/cancelled ticket (e.g. for post-mortems)"

@@ -160,3 +160,53 @@ test('--ignore-state does not suppress other gates (prompt injection still block
   assert.equal(analysis.readiness, 'blocked');
   assert.ok(analysis.hardGates.some((gate) => gate.id === 'prompt_injection_or_exfiltration'));
 });
+
+test('feature-shaped ticket gets neutral clarifying questions, not bug-shaped ones', () => {
+  const analysis = analyze(
+    syntheticMarkdown(
+      'Production hardening: logging, metrics, and admin tooling',
+      'Stand up structured logging, request metrics, and admin tooling for the platform.'
+    ),
+    DEFAULT_CONFIG
+  );
+  const joined = analysis.clarifyingQuestions.join(' | ');
+  assert.ok(!/what happens today/i.test(joined), `feature ticket should not get bug-shaped wording: ${joined}`);
+  assert.ok(!/what should happen instead/i.test(joined), `feature ticket should not get bug-shaped wording: ${joined}`);
+  assert.ok(/what outcome should the agent produce/i.test(joined) || /current state today/i.test(joined), `expected neutral wording: ${joined}`);
+});
+
+test('bug-shaped ticket still gets bug-shaped clarifying questions', () => {
+  const analysis = analyze(
+    syntheticMarkdown('Server deployment throws warning', 'Recently the server logs have been showing a warning during deploy.'),
+    DEFAULT_CONFIG
+  );
+  const joined = analysis.clarifyingQuestions.join(' | ');
+  assert.ok(/what should happen instead/i.test(joined) || /what happens today/i.test(joined), `bug ticket should get bug-shaped wording: ${joined}`);
+});
+
+test('test-framework prose without a command earns partial verification credit', () => {
+  const analysis = analyze(
+    syntheticMarkdown(
+      'Frontend readiness for nightly insights',
+      '## Acceptance Criteria\n- nightly page renders\n- pagination works\n\n## Testing\nAdd Playwright smoke tests covering login, connector states, and post-job refresh.'
+    ),
+    DEFAULT_CONFIG
+  );
+  const verification = analysis.dimensions.find((item) => item.id === 'verification_path');
+  assert.equal(verification.status, 'partial', `expected partial, got ${verification.status} (score ${verification.score})`);
+  assert.ok(verification.score >= 3, `expected at least 3 points for prose framework mention, got ${verification.score}`);
+  assert.ok(verification.suggestions.some((suggestion) => /test command/i.test(suggestion)));
+});
+
+test('currentBehavior recognizes "Current logging is ad-hoc" phrasing', () => {
+  const analysis = analyze(
+    syntheticMarkdown(
+      'Add structured logging',
+      'Current logging is ad-hoc and hard to query. We want JSON logs with request IDs across the API surface.'
+    ),
+    DEFAULT_CONFIG
+  );
+  const joined = analysis.clarifyingQuestions.join(' | ');
+  assert.ok(!/what happens today/i.test(joined), `should not ask "what happens today" when current state is described: ${joined}`);
+  assert.ok(!/current state today/i.test(joined), `should not ask about current state when it is described: ${joined}`);
+});

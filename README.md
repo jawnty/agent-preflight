@@ -251,9 +251,10 @@ This repo includes `docs/demo.gif` and `docs/demo.svg`, which show the intended 
 2. See `not_ready` with missing acceptance criteria, verification, and technical anchors.
 3. Run on `fixtures/ready-bug.md`.
 4. See `ready`.
-5. Generate an upgrade draft and packet.
+5. Generate an upgrade draft.
+6. Run on `fixtures/build-tetris.md` and see the artifact detected as `product_spec` rather than a ticket.
 
-`docs/demo.svg` is a static poster frame. `docs/demo.gif` is an animated terminal recording (about 32 s, 296 frames). To re-record the GIF, drive the CLI through a terminal-capture tool such as [`vhs`](https://github.com/charmbracelet/vhs) or [`asciinema`](https://asciinema.org/) + [`agg`](https://github.com/asciinema/agg):
+`docs/demo.svg` is a static poster frame. `docs/demo.gif` is an animated terminal recording driven by `docs/demo.tape`. To re-record the GIF, drive the CLI through a terminal-capture tool such as [`vhs`](https://github.com/charmbracelet/vhs) or [`asciinema`](https://asciinema.org/) + [`agg`](https://github.com/asciinema/agg):
 
 ```bash
 # vhs (preferred — script-driven, deterministic)

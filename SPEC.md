@@ -471,6 +471,7 @@ Suggested scoring:
 - 4 points for manual verification steps.
 - 3 points for regression/failing test target.
 - 3 points for build/lint/typecheck command.
+- 3 points (partial credit) when a test framework is named in prose (Playwright, Cypress, Jest, Vitest, Mocha, Pytest, RSpec, JUnit, etc.) without a runnable command. The CLI will suggest adding an explicit test command.
 
 ### 6. Agent Environment Readiness, 10 Points
 
@@ -784,8 +785,12 @@ Generate deterministic questions from missing dimensions:
 
 - Missing acceptance criteria: `What observable conditions should be true when this is done?`
 - Missing verification: `What command or manual flow should the agent use to verify the change?`
-- Missing current behavior: `What happens today, and where can the agent reproduce it?`
-- Missing expected behavior: `What should happen instead?`
+- Missing current behavior on a bug-shaped ticket: `What happens today, and where can the agent reproduce it?`
+- Missing current behavior on a feature/spec-shaped ticket: `What is the current state today, and how can the agent observe it?`
+- Missing expected behavior on a bug-shaped ticket: `What should happen instead?`
+- Missing expected behavior on a feature/spec-shaped ticket: `What outcome should the agent produce, and how will it be recognized?`
+
+Bug-shape detection looks at labels (`bug`), `type`, and bug verbs in the title (`fix`, `broken`, `crashes`, `throws`, `fails`, etc.). Anything else is treated as feature/spec-shaped so the questions stay neutral instead of asking a feature ticket "what happens today?".
 - Missing technical anchors: `Which file, route, component, or API is most likely involved?`
 - Risk without mitigation: `What rollback or review path should the agent follow if this touches a sensitive area?`
 - External context inaccessible: `Can you summarize the linked context directly in the issue?`
